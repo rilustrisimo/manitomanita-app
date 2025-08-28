@@ -27,7 +27,7 @@ export default function Home() {
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
                   <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none font-headline">
-                    Seamless Gift Exchanges with ManitoMatch
+                    Seamless Gift Exchanges with ManitoManita
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
                     Organize your secret santa events effortlessly. Manage groups, create wishlists, and let our smart matching and AI do the rest.
@@ -99,7 +99,7 @@ export default function Home() {
         </section>
       </main>
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-        <p className="text-xs text-muted-foreground">&copy; 2024 ManitoMatch. All rights reserved.</p>
+        <p className="text-xs text-muted-foreground">&copy; 2024 ManitoManita. All rights reserved.</p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
           <Link href="#" className="text-xs hover:underline underline-offset-4">
             Terms of Service

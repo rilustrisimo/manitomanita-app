@@ -144,7 +144,7 @@ export default function GroupPage({ params }: { params: { id: string } }) {
           <div className="mt-4">
             <Label htmlFor="invite-link" className="text-xs text-muted-foreground">Invite Link</Label>
             <div className="flex gap-2">
-              <Input id="invite-link" type="text" readOnly value={`https://manitomatch.app/join/${group.id}?code=xyz123`} />
+              <Input id="invite-link" type="text" readOnly value={`https://manitomanita.app/join/${group.id}?code=xyz123`} />
               <Button variant="outline" size="icon"><Copy className="h-4 w-4" /></Button>
             </div>
           </div>
