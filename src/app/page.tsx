@@ -13,10 +13,10 @@ export default function Home() {
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           <Button variant="ghost" asChild>
-            <Link href="/dashboard">Login</Link>
+            <Link href="/login">Login</Link>
           </Button>
           <Button asChild>
-            <Link href="/dashboard">Sign Up</Link>
+            <Link href="/register">Sign Up</Link>
           </Button>
         </nav>
       </header>
@@ -35,7 +35,7 @@ export default function Home() {
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Button size="lg" asChild>
-                    <Link href="/dashboard">Get Started for Free</Link>
+                    <Link href="/register">Get Started for Free</Link>
                   </Button>
                 </div>
               </div>
