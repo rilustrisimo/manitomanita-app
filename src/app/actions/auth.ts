@@ -13,16 +13,22 @@ export async function signInWithGoogle(formData: FormData) {
   }
 
   const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-  const sessionCookie = await auth.createSessionCookie(idToken, {expiresIn});
-  const options = {
-    name: 'session',
-    value: sessionCookie,
-    maxAge: expiresIn,
-    httpOnly: true,
-    secure: true,
-  };
-  cookies().set(options);
-  redirect('/dashboard');
+  try {
+    const sessionCookie = await auth.createSessionCookie(idToken, {expiresIn});
+    const options = {
+      name: 'session',
+      value: sessionCookie,
+      maxAge: expiresIn,
+      httpOnly: true,
+      secure: true,
+    };
+    cookies().set(options);
+    redirect('/dashboard');
+  } catch (error) {
+    console.error('Error creating session cookie:', error);
+    // Redirect to an error page or show a message
+    redirect('/login?error=auth-failed');
+  }
 }
 
 export async function createSession(uid: string, payload: JWTPayload) {
@@ -31,7 +37,7 @@ export async function createSession(uid: string, payload: JWTPayload) {
     .setSubject(uid)
     .setIssuedAt()
     .setExpirationTime('1d')
-    .sign(new TextEncoder().encode(process.env.AUTH_SECRET));
+    .sign(new TextEncoder().encode(process.env.AUTH_SECRET!));
 
   cookies().set('session', session, {
     httpOnly: true,

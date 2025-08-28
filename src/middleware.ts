@@ -1,41 +1,22 @@
 import {NextRequest, NextResponse} from 'next/server';
-import {auth} from '@/lib/firebase-admin';
 
 export async function middleware(request: NextRequest) {
   const session = request.cookies().get('session')?.value;
 
-  if (!session) {
-    // If no session cookie, redirect to login page
-    if (request.nextUrl.pathname.startsWith('/dashboard')) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-    return NextResponse.next();
+  // If there's no session cookie and the user is trying to access a protected route, redirect to login.
+  if (!session && request.nextUrl.pathname.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  try {
-    // Verify the session cookie
-    const decodedIdToken = await auth.verifySessionCookie(session, true);
-    request.headers.set('X-User-ID', decodedIdToken.uid);
-
-    // If trying to access login/register while authenticated, redirect to dashboard
-    if (
-      request.nextUrl.pathname === '/login' ||
-      request.nextUrl.pathname === '/register'
-    ) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-
-    return NextResponse.next({
-      headers: {
-        'X-User-ID': decodedIdToken.uid,
-      },
-    });
-  } catch (error) {
-    // Session cookie is invalid. Clear it and redirect to login
-    const response = NextResponse.redirect(new URL('/login', request.url));
-    response.cookies.delete('session');
-    return response;
+  // If there IS a session, and the user tries to access login/register, redirect them to the dashboard.
+  if (session && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register')) {
+     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
+
+  // Allow the request to proceed. 
+  // The actual session verification for dashboard pages can happen on the page/layout itself 
+  // or in API routes if needed, using `firebase-admin` in a Node.js environment.
+  return NextResponse.next();
 }
 
 export const config = {
