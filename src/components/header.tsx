@@ -14,6 +14,20 @@ import { Button } from './ui/button';
 import Logo from './logo';
 import { mockUser } from '@/lib/data';
 import { LifeBuoy, LogOut, Settings, User } from 'lucide-react';
+import { signOut } from '@/app/actions/auth';
+
+function SignOutButton() {
+  return (
+    <form action={signOut}>
+      <button type="submit" className="w-full">
+        <DropdownMenuItem>
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Log out</span>
+        </DropdownMenuItem>
+      </button>
+    </form>
+  )
+}
 
 export default function Header() {
   const user = mockUser;
@@ -64,10 +78,7 @@ export default function Header() {
                   <LifeBuoy className="mr-2 h-4 w-4" />
                   <span>Support</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem disabled>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
+                <SignOutButton />
               </DropdownMenuContent>
             </DropdownMenu>
           </nav>
