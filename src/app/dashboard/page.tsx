@@ -19,7 +19,7 @@ export default function Dashboard() {
             <p className="text-muted-foreground">Here are your active gift exchange groups.</p>
           </div>
           <Button asChild className="mt-4 sm:mt-0">
-            <Link href="#">
+            <Link href="/groups/new">
               <PlusCircle className="mr-2 h-4 w-4" />
               Create New Group
             </Link>
@@ -37,7 +37,7 @@ export default function Dashboard() {
             <h2 className="text-xl font-semibold">No groups yet!</h2>
             <p className="text-muted-foreground mt-2">Get started by creating a new group for your friends or colleagues.</p>
             <Button asChild className="mt-4">
-              <Link href="#">
+              <Link href="/groups/new">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Create New Group
               </Link>
