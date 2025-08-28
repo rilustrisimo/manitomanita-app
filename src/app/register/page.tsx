@@ -1,10 +1,16 @@
+'use client';
+
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Logo from '@/components/logo'
-import { signInWithGoogle } from '@/app/actions/auth'
+import { createSession } from '@/app/actions/auth';
+import { auth } from '@/lib/firebase';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -54,13 +60,36 @@ function RegisterForm() {
 }
 
 function SocialSignInForm() {
+    const router = useRouter();
+    const { toast } = useToast();
+
+    const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      if (user) {
+        const token = await user.getIdToken();
+        await createSession(token);
+        router.push('/dashboard');
+      } else {
+        throw new Error("No user found after sign in");
+      }
+    } catch (error: any) {
+      console.error("Google Sign-In Error:", error);
+      toast({
+        variant: "destructive",
+        title: "Authentication Failed",
+        description: error.message || "There was an error signing in with Google.",
+      });
+    }
+  };
+
   return (
-    <form action={signInWithGoogle}>
-      <Button variant="outline" className="w-full">
-        <GoogleIcon className="mr-2 h-4 w-4" />
-        Sign up with Google
-      </Button>
-    </form>
+    <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
+      <GoogleIcon className="mr-2 h-4 w-4" />
+      Sign up with Google
+    </Button>
   )
 }
 
