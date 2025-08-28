@@ -37,7 +37,7 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 function LoginForm() {
   return (
-    <form action="/dashboard">
+    <form action={async () => await createSession('mock_token')}>
       <div className="grid gap-4">
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
@@ -72,7 +72,6 @@ function SocialSignInForm() {
       if (user) {
         const token = await user.getIdToken();
         await createSession(token);
-        router.push('/dashboard');
       } else {
         throw new Error("No user found after sign in");
       }
