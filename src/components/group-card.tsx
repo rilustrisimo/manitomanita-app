@@ -14,7 +14,7 @@ interface GroupCardProps {
 export default function GroupCard({ group, userId }: GroupCardProps) {
   const membersToShow = group.members.slice(0, 5);
   const currentUserMember = group.members.find(m => m.id === userId);
-  const userRole = currentUserMember?.isModerator ? 'Moderator' : 'Member';
+  const userRole = currentUserMember?.isModerator ? 'Moderator' : 'Joined as Member';
 
   return (
     <Card className="flex flex-col h-full shadow-md hover:shadow-lg transition-shadow duration-300">
