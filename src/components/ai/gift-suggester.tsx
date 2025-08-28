@@ -1,12 +1,13 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { suggestGiftsAction } from '@/app/actions/suggest-gifts-action';
 import type { Member } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Bot, Link as LinkIcon, Loader2, ShoppingCart } from 'lucide-react';
+import { Bot, Loader2, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '../ui/badge';
 
@@ -39,7 +40,7 @@ function SubmitButton() {
 }
 
 export default function GiftSuggester({ recipient }: GiftSuggesterProps) {
-  const [state, formAction] = useFormState(suggestGiftsAction, initialState);
+  const [state, formAction] = useActionState(suggestGiftsAction, initialState);
 
   return (
     <div>
