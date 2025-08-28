@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Crown, Copy, Shuffle, Users, Gift, Bot, MessageSquare, DollarSign } from 'lucide-react';
+import { Calendar, Crown, Copy, Shuffle, Users, Gift, Bot, MessageSquare } from 'lucide-react';
 import GiftSuggester from '@/components/ai/gift-suggester';
 import WishlistEditor from '@/components/wishlist-editor';
 import Link from 'next/link';
@@ -132,7 +132,7 @@ export default function GroupPage({ params }: { params: { id: string } }) {
               <h1 className="text-4xl font-bold font-headline">{group.name}</h1>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground mt-2">
                 <div className="flex items-center gap-1"><Calendar className="w-4 h-4" /> Exchange: {new Date(group.exchangeDate).toLocaleDateString()}</div>
-                <div className="flex items-center gap-1"><DollarSign className="w-4 h-4" /> Min. Spend: ${group.spendingMinimum}</div>
+                <div className="flex items-center gap-1"><span className="font-bold text-lg">₱</span> Min. Spend: {group.spendingMinimum}</div>
                 <div className="flex items-center gap-1"><Users className="w-4 h-4" /> {group.members.length} Members</div>
               </div>
             </div>

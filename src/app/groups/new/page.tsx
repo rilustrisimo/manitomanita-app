@@ -100,11 +100,11 @@ export default function NewGroupPage() {
                 </Popover>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="spending-minimum">Spending Minimum ($)</Label>
+                <Label htmlFor="spending-minimum">Spending Minimum (₱)</Label>
                 <Input
                   id="spending-minimum"
                   type="number"
-                  placeholder="e.g., 25"
+                  placeholder="e.g., 1000"
                   value={spendingMinimum}
                   onChange={(e) => setSpendingMinimum(e.target.value)}
                 />
