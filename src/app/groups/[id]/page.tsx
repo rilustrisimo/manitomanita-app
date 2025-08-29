@@ -24,6 +24,7 @@ import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 function RecipientCard({ recipient }: { recipient: Member }) {
@@ -99,31 +100,33 @@ function MemberDetailsModal({ member }: { member: Member }) {
       </DialogHeader>
       <div className="py-4 space-y-6">
         {member.wishlist.length > 0 ? (
-          <ul className="space-y-4 max-h-[50vh] overflow-y-auto pr-4">
-            {member.wishlist.map(item => (
-              <li key={item.id} className="p-4 border rounded-md bg-secondary/50 space-y-3">
-                <div>
-                  <p className="font-semibold">{item.name}</p>
-                  <p className="text-sm text-muted-foreground">{item.description}</p>
-                  {item.links && item.links.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {item.links.map((link, index) => (
-                        <Link key={index} href={link} target="_blank" className="text-sm text-accent hover:underline flex items-center gap-1">
-                           <LinkIcon className="w-3 h-3" />
-                           Reference Link {item.links.length > 1 ? index + 1 : ''}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor={`comment-${item.id}`} className="text-xs font-semibold flex items-center gap-1.5"><MessageSquare className="w-3 h-3" /> Leave a comment on this item</Label>
-                  <Textarea id={`comment-${item.id}`} placeholder="e.g., 'Is this the right color?' or 'Great idea!'" rows={2} />
-                  <Button size="sm" variant="outline">Submit Comment</Button>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <ScrollArea className="h-[50vh] pr-6">
+            <ul className="space-y-4">
+              {member.wishlist.map(item => (
+                <li key={item.id} className="p-4 border rounded-md bg-secondary/50 space-y-3">
+                  <div>
+                    <p className="font-semibold">{item.name}</p>
+                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                    {item.links && item.links.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {item.links.map((link, index) => (
+                          <Link key={index} href={link} target="_blank" className="text-sm text-accent hover:underline flex items-center gap-1">
+                            <LinkIcon className="w-3 h-3" />
+                            Reference Link {item.links.length > 1 ? index + 1 : ''}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`comment-${item.id}`} className="text-xs font-semibold flex items-center gap-1.5"><MessageSquare className="w-3 h-3" /> Leave a comment on this item</Label>
+                    <Textarea id={`comment-${item.id}`} placeholder="e.g., 'Is this the right color?' or 'Great idea!'" rows={2} />
+                    <Button size="sm" variant="outline">Submit Comment</Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </ScrollArea>
         ) : (
           <p className="text-muted-foreground text-center py-8">This member's wishlist is empty.</p>
         )}
@@ -161,7 +164,7 @@ function MembersList({ members, isPro }: { members: Member[], isPro: boolean }) 
 
   return (
     <div className="space-y-4">
-      <div className="space-y-4">
+       <div className="space-y-4">
         <Input
           placeholder="Search members..."
           value={searchTerm}
