@@ -110,8 +110,8 @@ function MembersList({ members, isPro }: { members: Member[], isPro: boolean }) 
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm"
         />
-        <Tabs value={filter} onValueChange={setFilter} className="w-full sm:w-auto">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs value={filter} onValueChange={setFilter}>
+          <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="has-wishlist">Has Wishlist</TabsTrigger>
             <TabsTrigger value="no-wishlist">No Wishlist</TabsTrigger>
@@ -286,5 +286,3 @@ export default function GroupPage({ params }: { params: { id: string } }) {
     </div>
   );
 }
-
-    
