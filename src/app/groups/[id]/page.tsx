@@ -192,7 +192,7 @@ function MembersList({ members, isPro }: { members: Member[], isPro: boolean }) 
             {filteredMembers.map(member => (
                <Dialog key={member.id}>
                 <DialogTrigger asChild>
-                    <TableRow className="cursor-pointer">
+                    <TableRow className="cursor-pointer hover:bg-muted/50">
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar>
@@ -220,9 +220,7 @@ function MembersList({ members, isPro }: { members: Member[], isPro: boolean }) 
                       </TableCell>
                       {isPro && (
                         <TableCell>
-                          <div className="flex justify-end">
-                            <Button variant="outline" size="sm">Send Comment</Button>
-                          </div>
+                          {/* The button is removed as clicking the row opens the modal */}
                         </TableCell>
                       )}
                     </TableRow>
