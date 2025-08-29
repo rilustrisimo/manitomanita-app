@@ -145,15 +145,15 @@ function MembersList({ members, isPro }: { members: Member[], isPro: boolean }) 
 
   return (
     <div className="space-y-4">
-       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+       <div className="space-y-4">
         <Input
           placeholder="Search members..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-full sm:max-w-xs"
+          className="w-full"
         />
-        <Tabs value={filter} onValueChange={setFilter} className="w-full sm:w-auto">
-          <TabsList className="grid w-full grid-cols-3 sm:w-auto">
+        <Tabs value={filter} onValueChange={setFilter}>
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="has-wishlist">Has Wishlist</TabsTrigger>
             <TabsTrigger value="no-wishlist">No Wishlist</TabsTrigger>
