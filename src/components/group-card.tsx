@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Calendar, Users, Crown, UserCheck, UserPlus, LogIn } from 'lucide-react';
+import { ArrowRight, Calendar, Users, Crown, UserCheck, LogIn } from 'lucide-react';
 import type { Group } from '@/lib/types';
 
 interface GroupCardProps {
@@ -15,14 +15,6 @@ export default function GroupCard({ group, userId }: GroupCardProps) {
   const membersToShow = group.members.slice(0, 5);
   const currentUserIsMember = group.members.some(m => m.id === userId);
   const currentUserIsModerator = group.members.find(m => m.id === userId)?.isModerator ?? false;
-
-  let userRole = 'Not Joined';
-  if (currentUserIsMember) {
-    userRole = currentUserIsModerator ? 'Moderator' : 'Member';
-  } else if (group.members.find(m => m.id === userId && m.isModerator)) {
-    userRole = 'Moderator (Not Joined)';
-  }
-
 
   return (
     <Card className="flex flex-col h-full shadow-md hover:shadow-lg transition-shadow duration-300">
@@ -47,7 +39,7 @@ export default function GroupCard({ group, userId }: GroupCardProps) {
               {membersToShow.map((member) => (
                 <Avatar key={member.id} className="inline-block h-8 w-8 rounded-full ring-2 ring-background">
                   <AvatarImage src={member.avatarUrl} />
-                  <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                  <AvatarFallback>{member.screenName.charAt(0)}</AvatarFallback>
                 </Avatar>
               ))}
               {group.members.length > 5 && (
@@ -60,7 +52,7 @@ export default function GroupCard({ group, userId }: GroupCardProps) {
           <div className="flex flex-wrap gap-2">
              {currentUserIsMember ? (
                <Badge variant={currentUserIsModerator ? "default" : "secondary"}>
-                {currentUserIsModerator ? <UserCheck className="w-3 h-3 mr-1" /> : <UserPlus className="w-3 h-3 mr-1" />}
+                <UserCheck className="w-3 h-3 mr-1" />
                 Your Role: {currentUserIsModerator ? 'Moderator' : 'Member'}
               </Badge>
              ) : (

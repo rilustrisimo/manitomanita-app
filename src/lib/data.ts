@@ -24,7 +24,8 @@ export const mockGroups: Group[] = [
       {
         id: 'user_1',
         name: 'Alex Doe',
-        avatarUrl: 'https://i.pravatar.cc/150?u=alex_doe',
+        screenName: 'The Grinch',
+        avatarUrl: 'https://i.pravatar.cc/150?u=group_1_user_1',
         isModerator: true,
         wishlist: [
           { id: 'w1_1', name: 'Mechanical Keyboard', description: 'A tenkeyless (TKL) with brown switches.', links: ['https://www.lazada.com.ph'] },
@@ -37,7 +38,8 @@ export const mockGroups: Group[] = [
       {
         id: 'user_2',
         name: 'Ben Smith',
-        avatarUrl: 'https://i.pravatar.cc/150?u=ben_smith',
+        screenName: 'Santa\'s Helper',
+        avatarUrl: 'https://i.pravatar.cc/150?u=group_1_user_2',
         isModerator: false,
         wishlist: [
           { id: 'w2_1', name: 'Artisanal Tea Set', description: 'Loves green and oolong tea.' },
@@ -50,7 +52,8 @@ export const mockGroups: Group[] = [
       {
         id: 'user_3',
         name: 'Chloe Garcia',
-        avatarUrl: 'https://i.pravatar.cc/150?u=chloe_garcia',
+        screenName: 'Jingle Belle',
+        avatarUrl: 'https://i.pravatar.cc/150?u=group_1_user_3',
         isModerator: false,
         wishlist: [
           { id: 'w3_1', name: 'Indoor plant', description: 'A snake plant or a ZZ plant.' },
@@ -60,7 +63,8 @@ export const mockGroups: Group[] = [
       {
         id: 'user_4',
         name: 'David Lee',
-        avatarUrl: 'https://i.pravatar.cc/150?u=david_lee',
+        screenName: 'Sir Gifts-a-Lot',
+        avatarUrl: 'https://i.pravatar.cc/150?u=group_1_user_4',
         isModerator: false,
         wishlist: [
           { id: 'w4_1', name: 'Smart water bottle', description: 'One that tracks intake.' },
@@ -81,7 +85,8 @@ export const mockGroups: Group[] = [
       {
         id: 'user_1',
         name: 'Alex Doe',
-        avatarUrl: 'https://i.pravatar.cc/150?u=alex_doe',
+        screenName: 'Captain Cook',
+        avatarUrl: 'https://i.pravatar.cc/150?u=group_2_user_1',
         isModerator: true,
         wishlist: [
           { id: 'fw1_1', name: 'Board Game - Wingspan', description: 'Heard great things about it!' },
@@ -91,7 +96,8 @@ export const mockGroups: Group[] = [
       {
         id: 'user_5',
         name: 'Eva Chen',
-        avatarUrl: 'https://i.pravatar.cc/150?u=eva_chen',
+        screenName: 'The Baker',
+        avatarUrl: 'https://i.pravatar.cc/150?u=group_2_user_5',
         isModerator: false,
         wishlist: [],
         comments: [],
@@ -99,7 +105,8 @@ export const mockGroups: Group[] = [
        {
         id: 'user_6',
         name: 'Frank White',
-        avatarUrl: 'https://i.pravatar.cc/150?u=frank_white',
+        screenName: 'DJ Frank',
+        avatarUrl: 'https://i.pravatar.cc/150?u=group_2_user_6',
         isModerator: false,
         wishlist: [],
         comments: [],

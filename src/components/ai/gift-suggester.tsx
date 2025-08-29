@@ -48,7 +48,7 @@ export default function GiftSuggester({ recipient }: GiftSuggesterProps) {
         {recipient.wishlist.map((item, index) => (
           <input key={index} type="hidden" name="wishlistItem" value={`${item.name}: ${item.description}`} />
         ))}
-        <input type="hidden" name="memberProfile" value={`Name: ${recipient.name}, Wishlist: ${recipient.wishlist.map(i => i.name).join(', ')}`} />
+        <input type="hidden" name="memberProfile" value={`Name: ${recipient.screenName}, Wishlist: ${recipient.wishlist.map(i => i.name).join(', ')}`} />
         <SubmitButton />
       </form>
 

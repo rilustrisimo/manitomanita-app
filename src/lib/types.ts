@@ -12,9 +12,10 @@ export interface WishlistItem {
 }
 
 export interface Member extends User {
+  screenName: string;
   isModerator: boolean;
   wishlist: WishlistItem[];
-  comments: { from: string; text: string }[];
+  comments: { from: string; text: 'string' }[];
 }
 
 export interface Group {

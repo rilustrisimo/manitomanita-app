@@ -25,11 +25,11 @@ function MemberCard({ member, isPro }: { member: Member, isPro: boolean }) {
       <CardContent className="p-4 flex flex-col gap-4">
         <div className="flex items-center gap-4">
           <Avatar className="h-12 w-12">
-            <AvatarImage src={member.avatarUrl} alt={member.name} />
-            <AvatarFallback>{member.name.slice(0, 2)}</AvatarFallback>
+            <AvatarImage src={member.avatarUrl} alt={member.screenName} />
+            <AvatarFallback>{member.screenName.slice(0, 2)}</AvatarFallback>
           </Avatar>
           <div>
-            <p className="font-semibold">{member.name}</p>
+            <p className="font-semibold">{member.screenName}</p>
             {member.isModerator && <Badge variant="secondary">Moderator</Badge>}
           </div>
         </div>
@@ -38,7 +38,7 @@ function MemberCard({ member, isPro }: { member: Member, isPro: boolean }) {
             <div className="flex items-start gap-2">
               <MessageSquare className="w-4 h-4 mt-1 text-muted-foreground" />
               <div className="w-full">
-                <Textarea placeholder={`Leave an anonymous comment for ${member.name}...`}/>
+                <Textarea placeholder={`Leave an anonymous comment for ${member.screenName}...`}/>
                 <Button size="sm" variant="outline" className="mt-2">Send Comment</Button>
               </div>
             </div>
@@ -65,17 +65,17 @@ function RecipientCard({ recipient }: { recipient: Member }) {
           Your Assigned Manito
         </CardTitle>
         <CardDescription>
-          You are the secret santa for {recipient.name}. Here's their wishlist to help you find the perfect gift!
+          You are the secret santa for {recipient.screenName}. Here's their wishlist to help you find the perfect gift!
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-start gap-4 mb-6">
           <Avatar className="h-16 w-16 border-2 border-accent">
-            <AvatarImage src={recipient.avatarUrl} alt={recipient.name} />
-            <AvatarFallback>{recipient.name.slice(0, 2)}</AvatarFallback>
+            <AvatarImage src={recipient.avatarUrl} alt={recipient.screenName} />
+            <AvatarFallback>{recipient.screenName.slice(0, 2)}</AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="text-xl font-bold">{recipient.name}</h3>
+            <h3 className="text-xl font-bold">{recipient.screenName}</h3>
             <p className="text-muted-foreground">Go get 'em a nice gift!</p>
           </div>
         </div>
@@ -205,6 +205,7 @@ export default function GroupPage({ params }: { params: { id: string } }) {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">You must join this group to add items to your wishlist, participate in the gift exchange, and see other members' wishlists.</p>
+
                   <Button className="mt-4"><LogIn className="mr-2 h-4 w-4" />Join Group</Button>
                 </CardContent>
               </Card>
