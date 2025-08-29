@@ -8,7 +8,7 @@ export interface WishlistItem {
   id: string;
   name: string;
   description: string;
-  link?: string;
+  links?: string[];
 }
 
 export interface Member extends User {

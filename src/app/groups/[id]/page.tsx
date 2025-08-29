@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Crown, Copy, Shuffle, Users, Gift, Bot, MessageSquare } from 'lucide-react';
+import { Calendar, Crown, Copy, Shuffle, Users, Gift, Bot, MessageSquare, Link as LinkIcon } from 'lucide-react';
 import GiftSuggester from '@/components/ai/gift-suggester';
 import WishlistEditor from '@/components/wishlist-editor';
 import Link from 'next/link';
@@ -90,7 +90,16 @@ function RecipientCard({ recipient }: { recipient: Member }) {
                 <li key={item.id} className="p-4 border rounded-md">
                   <p className="font-semibold">{item.name}</p>
                   <p className="text-sm text-muted-foreground">{item.description}</p>
-                  {item.link && <Link href={item.link} target="_blank" className="text-sm text-accent hover:underline">Reference Link</Link>}
+                  {item.links && item.links.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {item.links.map((link, index) => (
+                        <Link key={index} href={link} target="_blank" className="text-sm text-accent hover:underline flex items-center gap-1">
+                           <LinkIcon className="w-3 h-3" />
+                           Reference Link {item.links && item.links.length > 1 ? index + 1 : ''}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

@@ -6,7 +6,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Card, CardContent } from './ui/card';
-import { Trash2, Link as LinkIcon, Gift } from 'lucide-react';
+import { Trash2, Link as LinkIcon, Gift, PlusCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
 
 interface WishlistEditorProps {
@@ -17,7 +17,22 @@ export default function WishlistEditor({ initialItems }: WishlistEditorProps) {
   const [items, setItems] = useState<WishlistItem[]>(initialItems);
   const [newItemName, setNewItemName] = useState('');
   const [newItemDesc, setNewItemDesc] = useState('');
-  const [newItemLink, setNewItemLink] = useState('');
+  const [newLinks, setNewLinks] = useState<string[]>(['']);
+
+  const handleLinkChange = (index: number, value: string) => {
+    const updatedLinks = [...newLinks];
+    updatedLinks[index] = value;
+    setNewLinks(updatedLinks);
+  };
+
+  const addLinkInput = () => {
+    setNewLinks([...newLinks, '']);
+  };
+
+  const removeLinkInput = (index: number) => {
+    const updatedLinks = newLinks.filter((_, i) => i !== index);
+    setNewLinks(updatedLinks);
+  };
 
   const handleAddItem = () => {
     if (newItemName.trim() === '') return;
@@ -25,12 +40,12 @@ export default function WishlistEditor({ initialItems }: WishlistEditorProps) {
       id: `wish_${Date.now()}`,
       name: newItemName,
       description: newItemDesc,
-      link: newItemLink,
+      links: newLinks.map(link => link.trim()).filter(link => link !== ''),
     };
     setItems([...items, newItem]);
     setNewItemName('');
     setNewItemDesc('');
-    setNewItemLink('');
+    setNewLinks(['']);
   };
 
   const handleRemoveItem = (id: string) => {
@@ -53,11 +68,25 @@ export default function WishlistEditor({ initialItems }: WishlistEditorProps) {
               value={newItemDesc}
               onChange={(e) => setNewItemDesc(e.target.value)}
             />
-            <Input
-              placeholder="Reference Link (optional)"
-              value={newItemLink}
-              onChange={(e) => setNewItemLink(e.target.value)}
-            />
+             <div className="space-y-2">
+                <label className="text-sm font-medium">Reference Links</label>
+                {newLinks.map((link, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      placeholder="https://example.com"
+                      value={link}
+                      onChange={(e) => handleLinkChange(index, e.target.value)}
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => removeLinkInput(index)} disabled={newLinks.length === 1 && index === 0 && newLinks[0] === ''}>
+                      <XCircle className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" onClick={addLinkInput}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add another link
+                </Button>
+              </div>
           </div>
           <Button onClick={handleAddItem}>Add to Wishlist</Button>
         </CardContent>
@@ -70,11 +99,15 @@ export default function WishlistEditor({ initialItems }: WishlistEditorProps) {
               <div className="flex-grow">
                 <p className="font-semibold">{item.name}</p>
                 <p className="text-sm text-muted-foreground">{item.description}</p>
-                {item.link && (
-                  <Link href={item.link} target="_blank" rel="noopener noreferrer" className="text-sm text-accent hover:underline flex items-center gap-1 mt-1">
-                    <LinkIcon className="w-3 h-3" />
-                    Reference Link
-                  </Link>
+                {item.links && item.links.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {item.links.map((link, index) => (
+                       <Link key={index} href={link} target="_blank" rel="noopener noreferrer" className="text-sm text-accent hover:underline flex items-center gap-1">
+                         <LinkIcon className="w-3 h-3" />
+                         Reference Link {item.links && item.links.length > 1 ? index + 1 : ''}
+                       </Link>
+                    ))}
+                  </div>
                 )}
               </div>
               <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)}>

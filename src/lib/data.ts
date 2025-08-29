@@ -27,8 +27,8 @@ export const mockGroups: Group[] = [
         avatarUrl: 'https://i.pravatar.cc/150?u=alex_doe',
         isModerator: true,
         wishlist: [
-          { id: 'w1_1', name: 'Mechanical Keyboard', description: 'A tenkeyless (TKL) with brown switches.', link: 'https://www.lazada.com.ph' },
-          { id: 'w1_2', name: 'Cold Brew Coffee Maker', description: 'Something easy to clean.', link: 'https://www.shopee.ph' },
+          { id: 'w1_1', name: 'Mechanical Keyboard', description: 'A tenkeyless (TKL) with brown switches.', links: ['https://www.lazada.com.ph'] },
+          { id: 'w1_2', name: 'Cold Brew Coffee Maker', description: 'Something easy to clean.', links: ['https://www.shopee.ph'] },
         ],
         comments: [
           { from: 'anonymous', text: 'Great team lead!' }
@@ -64,7 +64,7 @@ export const mockGroups: Group[] = [
         isModerator: false,
         wishlist: [
           { id: 'w4_1', name: 'Smart water bottle', description: 'One that tracks intake.' },
-          { id: 'w4_2', name: 'Noise-cancelling headphones', description: 'Good for focusing at work.', link: 'https://www.lazada.com.ph' },
+          { id: 'w4_2', name: 'Noise-cancelling headphones', description: 'Good for focusing at work.', links: ['https://www.lazada.com.ph'] },
         ],
         comments: [],
       },
