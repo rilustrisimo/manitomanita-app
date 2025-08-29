@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Crown, Copy, Shuffle, Users, Gift, Bot, MessageSquare, Link as LinkIcon, LogIn, LogOut, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Crown, Copy, Shuffle, Users, Gift, Bot, MessageSquare, Link as LinkIcon, LogIn, LogOut, CheckCircle, XCircle, MoreHorizontal } from 'lucide-react';
 import GiftSuggester from '@/components/ai/gift-suggester';
 import WishlistEditor from '@/components/wishlist-editor';
 import Link from 'next/link';
@@ -185,7 +185,7 @@ function MembersList({ members, isPro }: { members: Member[], isPro: boolean }) 
             <TableRow>
               <TableHead>Member</TableHead>
               <TableHead>Wishlist</TableHead>
-              {isPro && <TableHead className="text-right">Anonymous Comment</TableHead>}
+              <TableHead className="text-right">Details</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -218,11 +218,9 @@ function MembersList({ members, isPro }: { members: Member[], isPro: boolean }) 
                           </div>
                         )}
                       </TableCell>
-                      {isPro && (
-                        <TableCell>
-                          {/* The button is removed as clicking the row opens the modal */}
-                        </TableCell>
-                      )}
+                      <TableCell className="text-right">
+                        <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                      </TableCell>
                     </TableRow>
                 </DialogTrigger>
                 <MemberDetailsModal member={member} />
@@ -230,7 +228,7 @@ function MembersList({ members, isPro }: { members: Member[], isPro: boolean }) 
             ))}
              {filteredMembers.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={isPro ? 3 : 2} className="h-24 text-center">
+                    <TableCell colSpan={3} className="h-24 text-center">
                     No members found.
                     </TableCell>
                 </TableRow>
@@ -349,3 +347,5 @@ export default function GroupPage({ params }: { params: { id: string } }) {
     </div>
   );
 }
+
+    
