@@ -23,6 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 
 function RecipientCard({ recipient }: { recipient: Member }) {
@@ -84,6 +85,47 @@ function RecipientCard({ recipient }: { recipient: Member }) {
   )
 }
 
+function MemberDetailsModal({ member }: { member: Member }) {
+  return (
+    <DialogContent className="sm:max-w-[425px]">
+      <DialogHeader>
+        <DialogTitle className="font-headline flex items-center gap-4">
+           <Avatar className="h-12 w-12 border">
+            <AvatarImage src={member.avatarUrl} alt={member.screenName} />
+            <AvatarFallback>{member.screenName.slice(0, 2)}</AvatarFallback>
+          </Avatar>
+          <span>{member.screenName}'s Wishlist</span>
+        </DialogTitle>
+      </DialogHeader>
+      <div className="py-4">
+        {member.wishlist.length > 0 ? (
+          <ul className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+            {member.wishlist.map(item => (
+              <li key={item.id} className="p-4 border rounded-md bg-secondary/50">
+                <p className="font-semibold">{item.name}</p>
+                <p className="text-sm text-muted-foreground">{item.description}</p>
+                {item.links && item.links.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {item.links.map((link, index) => (
+                      <Link key={index} href={link} target="_blank" className="text-sm text-accent hover:underline flex items-center gap-1">
+                         <LinkIcon className="w-3 h-3" />
+                         Reference Link {item.links.length > 1 ? index + 1 : ''}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-muted-foreground text-center py-8">This member's wishlist is empty.</p>
+        )}
+      </div>
+    </DialogContent>
+  );
+}
+
+
 function MembersList({ members, isPro }: { members: Member[], isPro: boolean }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
@@ -108,10 +150,10 @@ function MembersList({ members, isPro }: { members: Member[], isPro: boolean }) 
           placeholder="Search members..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
+          className="max-w-xs"
         />
         <Tabs value={filter} onValueChange={setFilter}>
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-3 sm:w-auto">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="has-wishlist">Has Wishlist</TabsTrigger>
             <TabsTrigger value="no-wishlist">No Wishlist</TabsTrigger>
@@ -130,40 +172,45 @@ function MembersList({ members, isPro }: { members: Member[], isPro: boolean }) 
           </TableHeader>
           <TableBody>
             {filteredMembers.map(member => (
-              <TableRow key={member.id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src={member.avatarUrl} alt={member.screenName} />
-                      <AvatarFallback>{member.screenName.slice(0, 2)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{member.screenName}</p>
-                      {member.isModerator && <Badge variant="secondary" className="text-xs">Moderator</Badge>}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {member.wishlist.length > 0 ? (
-                    <div className="flex items-center gap-1 text-green-600">
-                      <CheckCircle className="w-4 h-4" />
-                      <span className="text-xs">Complete</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                       <XCircle className="w-4 h-4" />
-                       <span className="text-xs">Empty</span>
-                    </div>
-                  )}
-                </TableCell>
-                {isPro && (
-                  <TableCell>
-                    <div className="flex justify-end">
-                      <Button variant="outline" size="sm">Send Comment</Button>
-                    </div>
-                  </TableCell>
-                )}
-              </TableRow>
+               <Dialog key={member.id}>
+                <DialogTrigger asChild>
+                    <TableRow className="cursor-pointer">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={member.avatarUrl} alt={member.screenName} />
+                            <AvatarFallback>{member.screenName.slice(0, 2)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{member.screenName}</p>
+                            {member.isModerator && <Badge variant="secondary" className="text-xs">Moderator</Badge>}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {member.wishlist.length > 0 ? (
+                          <div className="flex items-center gap-1 text-green-600">
+                            <CheckCircle className="w-4 h-4" />
+                            <span className="text-xs">Complete</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                             <XCircle className="w-4 h-4" />
+                             <span className="text-xs">Empty</span>
+                          </div>
+                        )}
+                      </TableCell>
+                      {isPro && (
+                        <TableCell>
+                          <div className="flex justify-end">
+                            <Button variant="outline" size="sm">Send Comment</Button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                </DialogTrigger>
+                <MemberDetailsModal member={member} />
+              </Dialog>
             ))}
              {filteredMembers.length === 0 && (
                 <TableRow>
