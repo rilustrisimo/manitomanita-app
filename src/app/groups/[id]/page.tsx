@@ -87,7 +87,7 @@ function RecipientCard({ recipient }: { recipient: Member }) {
 
 function MemberDetailsModal({ member }: { member: Member }) {
   return (
-    <DialogContent className="sm:max-w-[425px]">
+    <DialogContent className="sm:max-w-xl">
       <DialogHeader>
         <DialogTitle className="font-headline flex items-center gap-4">
            <Avatar className="h-12 w-12 border">
@@ -97,29 +97,45 @@ function MemberDetailsModal({ member }: { member: Member }) {
           <span>{member.screenName}'s Wishlist</span>
         </DialogTitle>
       </DialogHeader>
-      <div className="py-4">
+      <div className="py-4 space-y-6">
         {member.wishlist.length > 0 ? (
-          <ul className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+          <ul className="space-y-4 max-h-[50vh] overflow-y-auto pr-4">
             {member.wishlist.map(item => (
-              <li key={item.id} className="p-4 border rounded-md bg-secondary/50">
-                <p className="font-semibold">{item.name}</p>
-                <p className="text-sm text-muted-foreground">{item.description}</p>
-                {item.links && item.links.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    {item.links.map((link, index) => (
-                      <Link key={index} href={link} target="_blank" className="text-sm text-accent hover:underline flex items-center gap-1">
-                         <LinkIcon className="w-3 h-3" />
-                         Reference Link {item.links.length > 1 ? index + 1 : ''}
-                      </Link>
-                    ))}
-                  </div>
-                )}
+              <li key={item.id} className="p-4 border rounded-md bg-secondary/50 space-y-3">
+                <div>
+                  <p className="font-semibold">{item.name}</p>
+                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                  {item.links && item.links.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {item.links.map((link, index) => (
+                        <Link key={index} href={link} target="_blank" className="text-sm text-accent hover:underline flex items-center gap-1">
+                           <LinkIcon className="w-3 h-3" />
+                           Reference Link {item.links.length > 1 ? index + 1 : ''}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`comment-${item.id}`} className="text-xs font-semibold flex items-center gap-1.5"><MessageSquare className="w-3 h-3" /> Leave a comment on this item</Label>
+                  <Textarea id={`comment-${item.id}`} placeholder="e.g., 'Is this the right color?' or 'Great idea!'" rows={2} />
+                  <Button size="sm" variant="outline">Submit Comment</Button>
+                </div>
               </li>
             ))}
           </ul>
         ) : (
           <p className="text-muted-foreground text-center py-8">This member's wishlist is empty.</p>
         )}
+
+        <Separator />
+
+        <div className="space-y-2">
+          <h4 className="font-semibold font-headline flex items-center gap-2"><MessageSquare className="w-5 h-5 text-accent"/>General Comment</h4>
+          <Label htmlFor={`general-comment-${member.id}`} className="text-sm text-muted-foreground">Leave a general comment or word of encouragement for {member.screenName}.</Label>
+          <Textarea id={`general-comment-${member.id}`} placeholder="e.g., 'Happy holidays!' or 'Excited for the exchange!'" rows={3} />
+          <Button>Submit General Comment</Button>
+        </div>
       </div>
     </DialogContent>
   );
@@ -145,12 +161,11 @@ function MembersList({ members, isPro }: { members: Member[], isPro: boolean }) 
 
   return (
     <div className="space-y-4">
-       <div className="space-y-4">
+      <div className="space-y-4">
         <Input
           placeholder="Search members..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full"
         />
         <Tabs value={filter} onValueChange={setFilter}>
           <TabsList className="grid w-full grid-cols-3">
