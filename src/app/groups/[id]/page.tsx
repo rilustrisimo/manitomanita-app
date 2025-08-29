@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound } from 'next/navigation';
@@ -289,6 +290,13 @@ export default function GroupPage({ params }: { params: { id: string } }) {
     <div className="min-h-screen bg-secondary">
       <Header />
       <main className="container mx-auto px-4 py-8 space-y-8">
+        <Button asChild variant="outline" className="mb-4">
+          <Link href="/dashboard">
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Back to All Groups
+          </Link>
+        </Button>
+
         {/* Group Header */}
         <section>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -405,3 +413,5 @@ export default function GroupPage({ params }: { params: { id: string } }) {
     </div>
   );
 }
+
+    
