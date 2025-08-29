@@ -37,24 +37,12 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 function LoginForm() {
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // This is to prevent the form from submitting in the standard way
-    // The action will be triggered by the button click
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    createSession('mock_token');
-  }
-
   return (
-    <form onSubmit={handleSubmit} action={async () => await createSession('mock_token')}>
+    <form action={async () => await createSession('mock_token')}>
       <div className="grid gap-4">
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Input id="email" name="email" type="email" placeholder="m@example.com" required />
         </div>
         <div className="grid gap-2">
           <div className="flex items-center">
@@ -63,7 +51,7 @@ function LoginForm() {
               Forgot password?
             </Link>
           </div>
-          <Input id="password" name="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+          <Input id="password" name="password" type="password" required />
         </div>
         <Button type="submit" className="w-full">
           Login
