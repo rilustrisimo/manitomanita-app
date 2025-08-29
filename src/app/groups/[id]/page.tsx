@@ -1,3 +1,5 @@
+'use client';
+
 import { notFound } from 'next/navigation';
 import Header from '@/components/header';
 import { mockGroups, mockUser } from '@/lib/data';
@@ -13,48 +15,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Crown, Copy, Shuffle, Users, Gift, Bot, MessageSquare, Link as LinkIcon, LogIn, LogOut } from 'lucide-react';
+import { Calendar, Crown, Copy, Shuffle, Users, Gift, Bot, MessageSquare, Link as LinkIcon, LogIn, LogOut, CheckCircle, XCircle } from 'lucide-react';
 import GiftSuggester from '@/components/ai/gift-suggester';
 import WishlistEditor from '@/components/wishlist-editor';
 import Link from 'next/link';
 import { Textarea } from '@/components/ui/textarea';
+import React, { useState, useMemo } from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-function MemberCard({ member, isPro }: { member: Member, isPro: boolean }) {
-  return (
-    <Card>
-      <CardContent className="p-4 flex flex-col gap-4">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-12 w-12">
-            <AvatarImage src={member.avatarUrl} alt={member.screenName} />
-            <AvatarFallback>{member.screenName.slice(0, 2)}</AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-semibold">{member.screenName}</p>
-            {member.isModerator && <Badge variant="secondary">Moderator</Badge>}
-          </div>
-        </div>
-        {isPro && (
-          <div className="space-y-2">
-            <div className="flex items-start gap-2">
-              <MessageSquare className="w-4 h-4 mt-1 text-muted-foreground" />
-              <div className="w-full">
-                <Textarea placeholder={`Leave an anonymous comment for ${member.screenName}...`}/>
-                <Button size="sm" variant="outline" className="mt-2">Send Comment</Button>
-              </div>
-            </div>
-             {member.comments.length > 0 && (
-               <div className="pl-6 space-y-2">
-                {member.comments.map((comment, i) => (
-                  <p key={i} className="text-sm text-muted-foreground italic">"{comment.text}"</p>
-                ))}
-               </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
 
 function RecipientCard({ recipient }: { recipient: Member }) {
   return (
@@ -112,6 +81,101 @@ function RecipientCard({ recipient }: { recipient: Member }) {
         <GiftSuggester recipient={recipient} />
       </CardContent>
     </Card>
+  )
+}
+
+function MembersList({ members, isPro }: { members: Member[], isPro: boolean }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filter, setFilter] = useState('all');
+
+  const filteredMembers = useMemo(() => {
+    return members
+      .filter(member => {
+        if (filter === 'all') return true;
+        if (filter === 'has-wishlist') return member.wishlist.length > 0;
+        if (filter === 'no-wishlist') return member.wishlist.length === 0;
+        return true;
+      })
+      .filter(member => 
+        member.screenName.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+  }, [members, searchTerm, filter]);
+
+  return (
+    <div className="space-y-4">
+       <div className="flex flex-col sm:flex-row gap-4">
+        <Input
+          placeholder="Search members..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm"
+        />
+        <Tabs value={filter} onValueChange={setFilter} className="w-full sm:w-auto">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="has-wishlist">Has Wishlist</TabsTrigger>
+            <TabsTrigger value="no-wishlist">No Wishlist</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Member</TableHead>
+              <TableHead>Wishlist</TableHead>
+              {isPro && <TableHead className="text-right">Anonymous Comment</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredMembers.map(member => (
+              <TableRow key={member.id}>
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarImage src={member.avatarUrl} alt={member.screenName} />
+                      <AvatarFallback>{member.screenName.slice(0, 2)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{member.screenName}</p>
+                      {member.isModerator && <Badge variant="secondary" className="text-xs">Moderator</Badge>}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {member.wishlist.length > 0 ? (
+                    <div className="flex items-center gap-1 text-green-600">
+                      <CheckCircle className="w-4 h-4" />
+                      <span className="text-xs">Complete</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                       <XCircle className="w-4 h-4" />
+                       <span className="text-xs">Empty</span>
+                    </div>
+                  )}
+                </TableCell>
+                {isPro && (
+                  <TableCell>
+                    <div className="flex justify-end">
+                      <Button variant="outline" size="sm">Send Comment</Button>
+                    </div>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+             {filteredMembers.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={isPro ? 3 : 2} className="h-24 text-center">
+                    No members found.
+                    </TableCell>
+                </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
   )
 }
 
@@ -215,14 +279,12 @@ export default function GroupPage({ params }: { params: { id: string } }) {
           {/* Right Column */}
           <div className="space-y-6">
             <h2 className="text-2xl font-bold font-headline">Members ({group.members.length})</h2>
-            <div className="space-y-4">
-              {group.members.map(member => (
-                <MemberCard key={member.id} member={member} isPro={group.isPro} />
-              ))}
-            </div>
+            <MembersList members={group.members} isPro={group.isPro} />
           </div>
         </div>
       </main>
     </div>
   );
 }
+
+    
