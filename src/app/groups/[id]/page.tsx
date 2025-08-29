@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Crown, Copy, Shuffle, Users, Gift, Bot, MessageSquare, Link as LinkIcon, LogIn, LogOut, CheckCircle, XCircle, MoreHorizontal } from 'lucide-react';
+import { Calendar, Crown, Copy, Shuffle, Users, Gift, Bot, MessageSquare, Link as LinkIcon, LogIn, LogOut, CheckCircle, XCircle, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import GiftSuggester from '@/components/ai/gift-suggester';
 import WishlistEditor from '@/components/wishlist-editor';
 import Link from 'next/link';
@@ -23,7 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 
@@ -86,9 +86,9 @@ function RecipientCard({ recipient }: { recipient: Member }) {
   )
 }
 
-function MemberDetailsModal({ member }: { member: Member }) {
+function MemberDetailsModal({ member, onNavigate, canNavigatePrev, canNavigateNext }: { member: Member; onNavigate: (direction: 'prev' | 'next') => void; canNavigatePrev: boolean; canNavigateNext: boolean;}) {
   return (
-    <DialogContent className="sm:max-w-xl">
+    <DialogContent className="sm:max-w-2xl">
       <DialogHeader>
         <DialogTitle className="font-headline flex items-center gap-4">
            <Avatar className="h-12 w-12 border">
@@ -99,8 +99,8 @@ function MemberDetailsModal({ member }: { member: Member }) {
         </DialogTitle>
       </DialogHeader>
       <div className="py-4 space-y-6">
-        {member.wishlist.length > 0 ? (
-          <ScrollArea className="h-[50vh] pr-6">
+        <ScrollArea className="h-[50vh] pr-6">
+          {member.wishlist.length > 0 ? (
             <ul className="space-y-4">
               {member.wishlist.map(item => (
                 <li key={item.id} className="p-4 border rounded-md bg-secondary/50 space-y-3">
@@ -126,11 +126,11 @@ function MemberDetailsModal({ member }: { member: Member }) {
                 </li>
               ))}
             </ul>
-          </ScrollArea>
-        ) : (
-          <p className="text-muted-foreground text-center py-8">This member's wishlist is empty.</p>
-        )}
-
+          ) : (
+            <p className="text-muted-foreground text-center py-8">This member's wishlist is empty.</p>
+          )}
+        </ScrollArea>
+        
         <Separator />
 
         <div className="space-y-2">
@@ -140,12 +140,25 @@ function MemberDetailsModal({ member }: { member: Member }) {
           <Button>Submit General Comment</Button>
         </div>
       </div>
+      <div className="flex justify-between items-center pt-4 border-t">
+        <Button variant="outline" onClick={() => onNavigate('prev')} disabled={!canNavigatePrev}>
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Previous
+        </Button>
+        <DialogClose asChild>
+          <Button variant="ghost">Close</Button>
+        </DialogClose>
+        <Button variant="outline" onClick={() => onNavigate('next')} disabled={!canNavigateNext}>
+            Next
+            <ChevronRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
     </DialogContent>
   );
 }
 
 
-function MembersList({ members, isPro }: { members: Member[], isPro: boolean }) {
+function MembersList({ members, onMemberSelect }: { members: Member[]; onMemberSelect: (member: Member) => void; }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
 
@@ -190,41 +203,35 @@ function MembersList({ members, isPro }: { members: Member[], isPro: boolean }) 
           </TableHeader>
           <TableBody>
             {filteredMembers.map(member => (
-               <Dialog key={member.id}>
-                <DialogTrigger asChild>
-                    <TableRow className="cursor-pointer hover:bg-muted/50">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage src={member.avatarUrl} alt={member.screenName} />
-                            <AvatarFallback>{member.screenName.slice(0, 2)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{member.screenName}</p>
-                            {member.isModerator && <Badge variant="secondary" className="text-xs">Moderator</Badge>}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {member.wishlist.length > 0 ? (
-                          <div className="flex items-center gap-1 text-green-600">
-                            <CheckCircle className="w-4 h-4" />
-                            <span className="text-xs">Complete</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                             <XCircle className="w-4 h-4" />
-                             <span className="text-xs">Empty</span>
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                      </TableCell>
-                    </TableRow>
-                </DialogTrigger>
-                <MemberDetailsModal member={member} />
-              </Dialog>
+              <TableRow key={member.id} onClick={() => onMemberSelect(member)} className="cursor-pointer hover:bg-muted/50">
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarImage src={member.avatarUrl} alt={member.screenName} />
+                      <AvatarFallback>{member.screenName.slice(0, 2)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{member.screenName}</p>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {member.wishlist.length > 0 ? (
+                    <div className="flex items-center gap-1 text-green-600">
+                      <CheckCircle className="w-4 h-4" />
+                      <span className="text-xs">Complete</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                       <XCircle className="w-4 h-4" />
+                       <span className="text-xs">Empty</span>
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                    <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                </TableCell>
+              </TableRow>
             ))}
              {filteredMembers.length === 0 && (
                 <TableRow>
@@ -240,21 +247,43 @@ function MembersList({ members, isPro }: { members: Member[], isPro: boolean }) 
   )
 }
 
-
 export default function GroupPage({ params }: { params: { id: string } }) {
   const group = mockGroups.find(g => g.id === params.id);
   const currentUser = mockUser;
 
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
   if (!group) {
     notFound();
   }
-
+  
+  const moderator = group.members.find(m => m.isModerator);
+  const nonModeratorMembers = group.members.filter(m => !m.isModerator);
   const currentUserIsMember = group.members.some(m => m.id === currentUser.id);
   const currentUserIsModerator = group.members.find(m => m.id === currentUser.id)?.isModerator ?? false;
   const currentUserWishlist = group.members.find(m => m.id === currentUser.id)?.wishlist ?? [];
   
   const recipientId = group.matches?.[currentUser.id];
   const recipient = group.members.find(m => m.id === recipientId);
+
+  const memberList = group.members;
+  const selectedMemberIndex = selectedMember ? memberList.findIndex(m => m.id === selectedMember.id) : -1;
+
+  const handleMemberSelect = (member: Member) => {
+    setSelectedMember(member);
+    setModalOpen(true);
+  };
+  
+  const handleNavigate = (direction: 'prev' | 'next') => {
+    if (selectedMemberIndex === -1) return;
+
+    const newIndex = direction === 'prev' ? selectedMemberIndex - 1 : selectedMemberIndex + 1;
+    
+    if (newIndex >= 0 && newIndex < memberList.length) {
+      setSelectedMember(memberList[newIndex]);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-secondary">
@@ -290,10 +319,8 @@ export default function GroupPage({ params }: { params: { id: string } }) {
 
         <Separator />
         
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Left/Main Column */}
           <div className="lg:col-span-2 space-y-8">
             {currentUserIsMember ? (
               <>
@@ -337,15 +364,44 @@ export default function GroupPage({ params }: { params: { id: string } }) {
             )}
           </div>
 
-          {/* Right Column */}
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold font-headline">Members ({group.members.length})</h2>
-            <MembersList members={group.members} isPro={group.isPro} />
+            {moderator && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg font-headline">Group Moderator</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-12 w-12">
+                       <AvatarImage src={`https://i.pravatar.cc/150?u=${moderator.id}`} alt={moderator.name} />
+                      <AvatarFallback>{moderator.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold">{moderator.name}</p>
+                      <p className="text-sm text-muted-foreground">The one in charge!</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+                <div className="space-y-2">
+                    <h2 className="text-2xl font-bold font-headline">Members ({nonModeratorMembers.length})</h2>
+                    <MembersList members={nonModeratorMembers} onMemberSelect={handleMemberSelect} />
+                </div>
+                {selectedMember && (
+                  <MemberDetailsModal
+                    member={selectedMember}
+                    onNavigate={handleNavigate}
+                    canNavigatePrev={selectedMemberIndex > 0}
+                    canNavigateNext={selectedMemberIndex < memberList.length - 1}
+                  />
+                )}
+            </Dialog>
           </div>
         </div>
       </main>
     </div>
   );
 }
-
-    
