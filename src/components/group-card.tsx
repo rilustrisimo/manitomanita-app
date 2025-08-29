@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Calendar, Users, Crown, UserCheck, UserPlus } from 'lucide-react';
+import { ArrowRight, Calendar, Users, Crown, UserCheck, UserPlus, LogIn } from 'lucide-react';
 import type { Group } from '@/lib/types';
 
 interface GroupCardProps {
@@ -13,8 +13,16 @@ interface GroupCardProps {
 
 export default function GroupCard({ group, userId }: GroupCardProps) {
   const membersToShow = group.members.slice(0, 5);
-  const currentUserMember = group.members.find(m => m.id === userId);
-  const userRole = currentUserMember?.isModerator ? 'Moderator' : 'Joined as Member';
+  const currentUserIsMember = group.members.some(m => m.id === userId);
+  const currentUserIsModerator = group.members.find(m => m.id === userId)?.isModerator ?? false;
+
+  let userRole = 'Not Joined';
+  if (currentUserIsMember) {
+    userRole = currentUserIsModerator ? 'Moderator' : 'Member';
+  } else if (group.members.find(m => m.id === userId && m.isModerator)) {
+    userRole = 'Moderator (Not Joined)';
+  }
+
 
   return (
     <Card className="flex flex-col h-full shadow-md hover:shadow-lg transition-shadow duration-300">
@@ -50,12 +58,17 @@ export default function GroupCard({ group, userId }: GroupCardProps) {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-             {currentUserMember && (
-               <Badge variant={userRole === 'Moderator' ? "default" : "secondary"}>
-                {userRole === 'Moderator' ? <UserCheck className="w-3 h-3 mr-1" /> : <UserPlus className="w-3 h-3 mr-1" />}
-                Your Role: {userRole}
+             {currentUserIsMember ? (
+               <Badge variant={currentUserIsModerator ? "default" : "secondary"}>
+                {currentUserIsModerator ? <UserCheck className="w-3 h-3 mr-1" /> : <UserPlus className="w-3 h-3 mr-1" />}
+                Your Role: {currentUserIsModerator ? 'Moderator' : 'Member'}
               </Badge>
-            )}
+             ) : (
+                <Badge variant="outline">
+                    <LogIn className="w-3 h-3 mr-1" />
+                    Not a member yet
+                </Badge>
+             )}
             {group.matchingCompleted ? (
               <Badge variant="secondary">Matching Complete</Badge>
             ) : (
@@ -67,7 +80,7 @@ export default function GroupCard({ group, userId }: GroupCardProps) {
       <CardFooter>
         <Button asChild className="w-full">
           <Link href={`/groups/${group.id}`}>
-            View Group <ArrowRight className="ml-2 h-4 w-4" />
+            {currentUserIsMember ? 'View Group' : 'View & Join Group'} <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
       </CardFooter>

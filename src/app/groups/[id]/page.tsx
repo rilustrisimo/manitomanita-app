@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Crown, Copy, Shuffle, Users, Gift, Bot, MessageSquare, Link as LinkIcon } from 'lucide-react';
+import { Calendar, Crown, Copy, Shuffle, Users, Gift, Bot, MessageSquare, Link as LinkIcon, LogIn, LogOut } from 'lucide-react';
 import GiftSuggester from '@/components/ai/gift-suggester';
 import WishlistEditor from '@/components/wishlist-editor';
 import Link from 'next/link';
@@ -124,6 +124,7 @@ export default function GroupPage({ params }: { params: { id: string } }) {
     notFound();
   }
 
+  const currentUserIsMember = group.members.some(m => m.id === currentUser.id);
   const currentUserIsModerator = group.members.find(m => m.id === currentUser.id)?.isModerator ?? false;
   const currentUserWishlist = group.members.find(m => m.id === currentUser.id)?.wishlist ?? [];
   
@@ -146,6 +147,9 @@ export default function GroupPage({ params }: { params: { id: string } }) {
               </div>
             </div>
             <div className="flex gap-2">
+              {!currentUserIsMember && <Button><LogIn className="mr-2 h-4 w-4" />Join Group</Button>}
+              {currentUserIsMember && <Button variant="outline"><LogOut className="mr-2 h-4 w-4" />Leave Group</Button>}
+
               {!group.isPro && <Button variant="outline"><Crown className="mr-2 h-4 w-4 text-accent" />Upgrade to PRO</Button>}
               {currentUserIsModerator && !group.matchingCompleted && <Button><Shuffle className="mr-2 h-4 w-4" />Start Matching</Button>}
             </div>
@@ -166,31 +170,45 @@ export default function GroupPage({ params }: { params: { id: string } }) {
           
           {/* Left/Main Column */}
           <div className="lg:col-span-2 space-y-8">
-            {group.matchingCompleted && recipient && <RecipientCard recipient={recipient} />}
+            {currentUserIsMember ? (
+              <>
+                {group.matchingCompleted && recipient && <RecipientCard recipient={recipient} />}
             
-            {!group.matchingCompleted && (
+                {!group.matchingCompleted && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="font-headline flex items-center gap-2">
+                        <Bot className="w-6 h-6 text-accent" />
+                        Matching Pending
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground">The moderator has not started the matching process yet. Your secret assignment will appear here once matching is complete!</p>
+                    </CardContent>
+                  </Card>
+                )}
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="font-headline">Your Wishlist</CardTitle>
+                    <CardDescription>Add items you'd like to receive. Your Manito will see this list.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <WishlistEditor initialItems={currentUserWishlist}/>
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
               <Card>
-                <CardHeader>
-                  <CardTitle className="font-headline flex items-center gap-2">
-                    <Bot className="w-6 h-6 text-accent" />
-                    Matching Pending
-                  </CardTitle>
+                 <CardHeader>
+                  <CardTitle className="font-headline">Join Group to Participate</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">The moderator has not started the matching process yet. Your secret assignment will appear here once matching is complete!</p>
+                  <p className="text-muted-foreground">You must join this group to add items to your wishlist, participate in the gift exchange, and see other members' wishlists.</p>
+                  <Button className="mt-4"><LogIn className="mr-2 h-4 w-4" />Join Group</Button>
                 </CardContent>
               </Card>
             )}
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-headline">Your Wishlist</CardTitle>
-                <CardDescription>Add items you'd like to receive. Your Manito will see this list.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <WishlistEditor initialItems={currentUserWishlist}/>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Right Column */}
