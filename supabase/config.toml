@@ -1,0 +1,4 @@
+project_id = "npeqgruddxvsvhlroumj"
+
+[functions."execute-matching"]
+verify_jwt = true

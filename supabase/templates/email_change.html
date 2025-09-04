@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your New Email - Manito Manita</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1b1b1b;
+            margin-bottom: 10px;
+        }
+        .tagline {
+            color: #6d6d6d;
+            font-size: 14px;
+        }
+        h1 {
+            color: #1b1b1b;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .button {
+            display: inline-block;
+            background: #3ec7c2;
+            color: white;
+            padding: 14px 28px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .button-container {
+            text-align: center;
+        }
+        .security-notice {
+            background: #f8f9fa;
+            border-left: 4px solid #3ec7c2;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #6d6d6d;
+            font-size: 14px;
+        }
+        .link {
+            color: #3ec7c2;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🎁 Manito Manita</div>
+            <div class="tagline">The Modern Way to Host Gift Exchanges</div>
+        </div>
+        
+        <h1>Confirm Your New Email</h1>
+        
+        <div class="content">
+            <p>Hi! 👋</p>
+            
+            <p>You recently requested to change the email address for your Manito Manita account. To complete this change, please confirm your new email address by clicking the button below:</p>
+        </div>
+        
+        <div class="button-container">
+            <a href="{{ .ConfirmationURL }}" class="button">Confirm New Email</a>
+        </div>
+        
+        <div class="content">
+            <p>If the button doesn't work, copy and paste this link into your browser:</p>
+            <p><a href="{{ .ConfirmationURL }}" class="link">{{ .ConfirmationURL }}</a></p>
+            
+            <div class="security-notice">
+                <p><strong>🔒 Security Notice:</strong></p>
+                <ul>
+                    <li>This confirmation link will expire in 24 hours</li>
+                    <li>If you didn't request this change, please contact us immediately</li>
+                    <li>Your email won't change until you click the confirmation link</li>
+                </ul>
+            </div>
+            
+            <p>Once confirmed, you'll use this new email address to sign in to your Manito Manita account.</p>
+        </div>
+        
+        <div class="footer">
+            <p>Stay secure!<br>The Manito Manita Team</p>
+            <p>Questions? Contact us at <a href="mailto:info@manitomanita.com" class="link">info@manitomanita.com</a></p>
+            <p>© 2025 Manito Manita. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

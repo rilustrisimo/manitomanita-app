@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Calendar, Users, Crown, UserCheck, LogIn } from 'lucide-react';
+import ProfileAvatar from '@/components/profile-avatar';
 import type { Group } from '@/lib/types';
 
 interface GroupCardProps {
@@ -37,10 +38,13 @@ export default function GroupCard({ group, userId }: GroupCardProps) {
             </div>
             <div className="flex -space-x-2 overflow-hidden">
               {membersToShow.map((member) => (
-                <Avatar key={member.id} className="inline-block h-8 w-8 rounded-full ring-2 ring-background">
-                  <AvatarImage src={member.avatarUrl} />
-                  <AvatarFallback>{member.screenName.charAt(0)}</AvatarFallback>
-                </Avatar>
+                <ProfileAvatar
+                  key={member.id}
+                  userId={member.id}
+                  profileImagePath={member.profileImagePath}
+                  displayName={member.screenName}
+                  className="inline-block h-8 w-8 rounded-full ring-2 ring-background"
+                />
               ))}
               {group.members.length > 5 && (
                 <Avatar className="relative flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium ring-2 ring-background">

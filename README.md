@@ -1,5 +1,3 @@
-# Firebase Studio
+# Manito Manita App
 
-This is a NextJS starter in Firebase Studio.
-
-To get started, take a look at src/app/page.tsx.
+Next.js + Tailwind application. See `docs/` for the rebuild plans. To get started, open `src/app/page.tsx` and run the dev server.

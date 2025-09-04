@@ -1,0 +1,14 @@
+# Supabase Email Templates Configuration
+# These templates customize the default Supabase auth emails with Manito Manita branding
+
+[auth.email.confirm]
+subject = "Welcome to Manito Manita! Please confirm your email"
+
+[auth.email.invite]
+subject = "You've been invited to join Manito Manita"
+
+[auth.email.recovery]
+subject = "Reset your Manito Manita password"
+
+[auth.email.email_change]
+subject = "Confirm your new email for Manito Manita"

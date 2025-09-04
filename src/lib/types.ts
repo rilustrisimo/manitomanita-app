@@ -2,6 +2,7 @@ export interface User {
   id: string;
   name: string;
   avatarUrl: string;
+  profileImagePath?: string | null;
 }
 
 export interface WishlistItem {
@@ -15,7 +16,8 @@ export interface Member extends User {
   screenName: string;
   isModerator: boolean;
   wishlist: WishlistItem[];
-  comments: { from: string; text: 'string' }[];
+  comments: { from: string; text: string }[];
+  profileImagePath?: string | null;
 }
 
 export interface Group {
