@@ -22,13 +22,39 @@ export default function LoginPage() {
     setError('');
     setMessage('');
 
-    const result = await signInWithEmail(formData);
-    
-    if (result?.error) {
-      setError(result.error);
+    try {
+      // Use the client to sign in directly
+      const supabase = createSupabaseBrowserClient();
+      const email = formData.get('email') as string;
+      const password = formData.get('password') as string;
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        setError(error.message);
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.session) {
+        // Create server session to sync with middleware
+        const { createSession } = await import('@/app/actions/auth');
+        await createSession(
+          data.session.access_token,
+          data.session.refresh_token,
+          data.session.expires_at || Date.now() + (60 * 60 * 1000)
+        );
+        
+        // Redirect to dashboard
+        window.location.href = '/dashboard';
+      }
+    } catch (err) {
+      setError('An error occurred during sign in');
       setIsLoading(false);
     }
-    // Success case is handled by redirect in the action
   };
 
   const handleGoogleLogin = async () => {
@@ -38,6 +64,8 @@ export default function LoginPage() {
 
     try {
       const supabase = createSupabaseBrowserClient();
+      
+      // Simple Google OAuth - no pre-clearing
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -47,10 +75,11 @@ export default function LoginPage() {
 
       if (error) {
         setError(error.message);
+        setIsLoading(false);
       }
+      // If successful, user will be redirected to Google OAuth
     } catch (err) {
       setError('An error occurred during Google sign in');
-    } finally {
       setIsLoading(false);
     }
   };

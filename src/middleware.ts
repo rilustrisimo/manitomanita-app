@@ -7,10 +7,14 @@ const publicRoutes = [
   '/login',
   '/register', 
   '/forgot-password',
+  '/auth/forgot-password',
   '/reset-password',
+  '/auth/reset-password',
   '/privacy',
   '/terms',
-  '/auth/callback'
+  '/auth/callback',
+  '/debug-auth',
+  '/force-logout'
 ];
 
 // Define route patterns that should be public
@@ -26,34 +30,75 @@ const authRoutes = [
   '/login',
   '/register',
   '/forgot-password',
-  '/reset-password'
+  '/auth/forgot-password',
+  '/reset-password',
+  '/auth/reset-password'
 ];
 
-async function validateSession(token: string): Promise<boolean> {
+async function validateSession(sessionCookie: string): Promise<{ isValid: boolean; newSessionData?: any }> {
   try {
-    console.log(`[Middleware] Validating token: ${token?.substring(0, 20)}...`);
+    let sessionData;
+    try {
+      sessionData = JSON.parse(sessionCookie);
+    } catch (error) {
+      console.error('[Middleware] Failed to parse session cookie:', error);
+      return { isValid: false };
+    }
+    
+    const { access_token, refresh_token, expires_at } = sessionData;
+    
+    if (!access_token) {
+      console.log('[Middleware] No access token in session');
+      return { isValid: false };
+    }
+    
+    console.log(`[Middleware] Validating token: ${access_token?.substring(0, 20)}...`);
     
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     
+    // Create Supabase client and set the session properly
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false },
-      global: { headers: { Authorization: `Bearer ${token}` } }
+      auth: { persistSession: false }
     });
     
-    const { data: { user }, error } = await supabase.auth.getUser();
-    
-    const isValid = !error && !!user;
-    console.log(`[Middleware] Session validation: ${isValid ? 'VALID' : 'INVALID'}`, { 
-      hasUser: !!user, 
-      error: error?.message,
-      tokenPreview: token?.substring(0, 20) + '...'
+    // Set the session with both tokens
+    const { data: sessionResult, error: sessionError } = await supabase.auth.setSession({
+      access_token,
+      refresh_token
     });
     
-    return isValid;
+    // If session setting succeeded and we have a user, it's valid
+    if (!sessionError && sessionResult.user) {
+      console.log(`[Middleware] Session validation: VALID`, { 
+        hasUser: !!sessionResult.user, 
+        tokenPreview: access_token?.substring(0, 20) + '...'
+      });
+      
+      // If we got refreshed tokens, return them
+      if (sessionResult.session && sessionResult.session.access_token !== access_token) {
+        console.log('[Middleware] Session was refreshed during validation');
+        const newSessionData = {
+          access_token: sessionResult.session.access_token,
+          refresh_token: sessionResult.session.refresh_token,
+          expires_at: sessionResult.session.expires_at || Date.now() + (60 * 60 * 1000)
+        };
+        return { isValid: true, newSessionData };
+      }
+      
+      return { isValid: true };
+    }
+    
+    console.log(`[Middleware] Session validation: INVALID`, { 
+      hasUser: !!sessionResult?.user, 
+      error: sessionError?.message || 'Auth session missing!',
+      tokenPreview: access_token?.substring(0, 20) + '...'
+    });
+    
+    return { isValid: false };
   } catch (error) {
     console.error('[Middleware] Session validation error:', error);
-    return false;
+    return { isValid: false };
   }
 }
 
@@ -67,6 +112,8 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute = publicRoutes.includes(pathname) || 
                        publicRoutePatterns.some(pattern => pattern.test(pathname));
   const isAuthRoute = authRoutes.includes(pathname);
+  
+  console.log(`[Middleware] ${pathname} - Public route: ${isPublicRoute}, Auth route: ${isAuthRoute}`);
 
   // If no session cookie exists
   if (!sessionCookie) {
@@ -81,9 +128,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // If session cookie exists, validate it
-  const isValidSession = await validateSession(sessionCookie);
+  const { isValid, newSessionData } = await validateSession(sessionCookie);
   
-  if (!isValidSession) {
+  if (!isValid) {
     console.log(`[Middleware] Invalid session, clearing cookie and redirecting to login`);
     // Session is invalid, clear the cookie and redirect to login
     const response = NextResponse.redirect(new URL('/login', request.url));
@@ -98,8 +145,22 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  // If we got new session data from refresh, update the cookie
+  if (newSessionData) {
+    console.log('[Middleware] Updating session cookie with refreshed token');
+    const response = NextResponse.next();
+    response.cookies.set('session', JSON.stringify(newSessionData), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/'
+    });
+    return response;
+  }
+
   // If user is logged in with valid session
-  if (isValidSession) {
+  if (isValid) {
     console.log(`[Middleware] Valid session - Auth route: ${isAuthRoute}`);
     // Redirect away from auth pages to dashboard
     if (isAuthRoute) {

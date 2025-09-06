@@ -6,15 +6,13 @@ import Link from 'next/link';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { createSession } from '@/app/actions/auth';
 import { joinGroup } from '@/app/actions/join-group';
-// Header removed - using global header from layout
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { LoadingOverlay } from '@/components/ui/loading';
-import { Users, Gift, Calendar } from 'lucide-react';
+import { LoadingButton } from '@/components/ui/loading-button';
+import { Users, Gift, Calendar, ArrowRight, CheckCircle } from 'lucide-react';
 
 interface GroupInfo {
   id: string;
@@ -26,7 +24,7 @@ interface GroupInfo {
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 48 48" {...props}>
+    <svg viewBox="0 0 48 48" {...props} className="w-5 h-5">
       <path
         fill="#FFC107"
         d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
@@ -54,18 +52,20 @@ export default function JoinGroupPage({ params }: { params: Promise<{ id: string
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [step, setStep] = useState<'welcome' | 'auth' | 'screen-name' | 'success'>('welcome');
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [initialized, setInitialized] = useState(false);
   
-  // Login form state
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  
-  // Register form state
-  const [registerEmail, setRegisterEmail] = useState('');
-  const [registerPassword, setRegisterPassword] = useState('');
-  const [registerScreenName, setRegisterScreenName] = useState('');
+  // Form state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [screenName, setScreenName] = useState('');
 
   useEffect(() => {
+    if (initialized) return; // Prevent multiple executions
+    
     const initialize = async () => {
       const resolvedParams = await params;
       setGroupId(resolvedParams.id);
@@ -76,32 +76,7 @@ export default function JoinGroupPage({ params }: { params: Promise<{ id: string
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
       
-      // If user is authenticated, check if they're already a member
-      if (user) {
-        try {
-          const { data: membership, error: membershipError } = await supabase
-            .from('memberships')
-            .select('id')
-            .eq('group_id', resolvedParams.id)
-            .eq('user_id', user.id)
-            .single();
-
-          if (membership && !membershipError) {
-            // User is already a member, redirect to group page
-            toast({
-              title: "Already a Member",
-              description: "You're already part of this group. Redirecting...",
-            });
-            router.push(`/groups/${resolvedParams.id}`);
-            return;
-          }
-        } catch (error) {
-          // User is not a member, continue with normal flow
-          console.log('User is not a member of this group');
-        }
-      }
-      
-      // Fetch group info using API route to bypass RLS
+      // Fetch group info first to ensure group exists
       try {
         const response = await fetch(`/api/groups/${resolvedParams.id}/public`);
         
@@ -115,6 +90,9 @@ export default function JoinGroupPage({ params }: { params: Promise<{ id: string
             title: "Group Not Found",
             description: "The group you're trying to join doesn't exist or is no longer available.",
           });
+          setLoading(false);
+          setInitialized(true);
+          return;
         }
       } catch (error) {
         console.error('Error fetching group:', error);
@@ -123,66 +101,125 @@ export default function JoinGroupPage({ params }: { params: Promise<{ id: string
           title: "Error",
           description: "Failed to load group information. Please try again.",
         });
+        setLoading(false);
+        setInitialized(true);
+        return;
+      }
+      
+      // If user is authenticated, check if they're already a member
+      if (user) {
+        try {
+          // First get their user_profiles entry
+          const { data: userProfile } = await supabase
+            .from('user_profiles')
+            .select('id')
+            .eq('main_user_id', user.id)
+            .eq('email', user.email!)
+            .maybeSingle() as { data: { id: string } | null };
+
+          if (userProfile?.id) {
+            const { data: membership, error: membershipError } = await supabase
+              .from('memberships')
+              .select('id')
+              .eq('group_id', resolvedParams.id)
+              .eq('user_id', userProfile.id)
+              .maybeSingle();
+
+            if (membership && !membershipError) {
+              // User is already a member, redirect to group page immediately
+              setRedirecting(true);
+              toast({
+                title: "Already a Member",
+                description: "You're already part of this group. Redirecting...",
+              });
+              setTimeout(() => {
+                router.replace(`/groups/${resolvedParams.id}`);
+              }, 100); // Small delay to prevent race conditions
+              return;
+            }
+          }
+        } catch (error) {
+          // User is not a member, continue with normal flow
+          console.log('User is not a member of this group');
+        }
+        
+        // User is authenticated but not a member, go to screen name step
+        setStep('screen-name');
+      } else {
+        // User is not authenticated, show welcome screen
+        setStep('welcome');
       }
       
       setLoading(false);
+      setInitialized(true);
     };
 
     initialize();
   }, [params, toast, router]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
 
     try {
       const supabase = createSupabaseBrowserClient();
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
-      });
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Login Failed",
-          description: error.message,
+      if (authMode === 'login') {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
         });
-        return;
-      }
 
-      if (data.session) {
-        // Create server session
-        await createSession(data.session.access_token);
-        
-        // Check if user is already a member before joining
-        const { data: existingMembership } = await supabase
-          .from('memberships')
-          .select('id')
-          .eq('group_id', groupId)
-          .eq('user_id', data.user.id)
-          .single();
-
-        if (existingMembership) {
+        if (error) {
           toast({
-            title: "Already a Member",
-            description: `You're already part of "${groupInfo?.group_name}".`,
+            variant: "destructive",
+            title: "Login Failed",
+            description: error.message,
           });
-        } else {
-          // Join the group
-          await joinGroup(groupId);
-          
+          return;
+        }
+
+        if (data.session) {
+          await createSession(
+            data.session.access_token,
+            data.session.refresh_token,
+            data.session.expires_at || Date.now() + (60 * 60 * 1000)
+          );
+          setCurrentUser(data.user);
+          setStep('screen-name');
+        }
+      } else {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+
+        if (error) {
           toast({
-            title: "Welcome!",
-            description: `You've successfully joined "${groupInfo?.group_name}".`,
+            variant: "destructive",
+            title: "Registration Failed",
+            description: error.message,
+          });
+          return;
+        }
+
+        if (data.session && data.user) {
+          await createSession(
+            data.session.access_token,
+            data.session.refresh_token,
+            data.session.expires_at || Date.now() + (60 * 60 * 1000)
+          );
+          setCurrentUser(data.user);
+          setStep('screen-name');
+        } else {
+          toast({
+            title: "Check Your Email",
+            description: "Please check your email and click the confirmation link to complete registration. After confirming, you can return to this link to join the group.",
           });
         }
-        
-        router.push(`/groups/${groupId}`);
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Auth error:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -193,64 +230,36 @@ export default function JoinGroupPage({ params }: { params: Promise<{ id: string
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-
-    try {
-      const supabase = createSupabaseBrowserClient();
-      
-      const { data, error } = await supabase.auth.signUp({
-        email: registerEmail,
-        password: registerPassword,
-      });
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Registration Failed",
-          description: error.message,
-        });
-        return;
-      }
-
-      if (data.session && data.user) {
-        // Create user profile
-        const { error: profileError } = await (supabase
-          .from('user_profiles') as any)
-          .insert({
-            id: data.user.id,
-            email: registerEmail,
-            screen_name: registerScreenName,
-          });
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-        }
-
-        // Create server session
-        await createSession(data.session.access_token);
-        
-        // Join the group
-        await joinGroup(groupId);
-        
-        toast({
-          title: "Account Created!",
-          description: `Welcome to "${groupInfo?.group_name}"! You've been added as a member.`,
-        });
-        
-        router.push(`/groups/${groupId}`);
-      } else {
-        toast({
-          title: "Check Your Email",
-          description: "Please check your email and click the confirmation link to complete registration. After confirming, you can return to this link to join the group.",
-        });
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
+  const handleJoinGroup = async () => {
+    if (!screenName.trim()) {
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "Screen Name Required",
+        description: "Please enter how you'd like to appear to other group members.",
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await joinGroup(groupId, screenName.trim());
+      setStep('success');
+      
+      toast({
+        title: "Welcome to the Group!",
+        description: `You've successfully joined "${groupInfo?.group_name}".`,
+      });
+      
+      // Redirect after a delay to ensure the user sees the success message
+      setTimeout(() => {
+        router.push(`/dashboard`);
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Join error:', error);
+      toast({
+        variant: "destructive",
+        title: "Failed to Join",
         description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
       });
     } finally {
@@ -294,39 +303,18 @@ export default function JoinGroupPage({ params }: { params: Promise<{ id: string
     }
   };
 
-  const handleJoinAsExistingUser = async () => {
-    if (!currentUser) return;
-    
-    setSubmitting(true);
-    try {
-      await joinGroup(groupId);
-      
-      toast({
-        title: "Joined Successfully!",
-        description: `You've been added to "${groupInfo?.group_name}" as a member.`,
-      });
-      
-      router.push(`/groups/${groupId}`);
-    } catch (error) {
-      console.error('Join error:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to join the group. You might already be a member.",
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (loading) {
+  if (loading || redirecting) {
     return (
-      <div className="min-h-screen w-full bg-secondary">
-        
+      <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 to-slate-100">
         <main className="container mx-auto max-w-md px-4 py-8 pt-24">
-          <LoadingOverlay isLoading={true} message="Loading group information...">
-            <div></div>
-          </LoadingOverlay>
+          <div className="flex items-center justify-center h-40">
+            <div className="text-center space-y-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="text-slate-600">
+                {redirecting ? "Redirecting to your group..." : "Loading group information..."}
+              </p>
+            </div>
+          </div>
         </main>
       </div>
     );
@@ -334,18 +322,20 @@ export default function JoinGroupPage({ params }: { params: Promise<{ id: string
 
   if (!groupInfo) {
     return (
-      <div className="min-h-screen w-full bg-secondary">
-        
+      <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 to-slate-100">
         <main className="container mx-auto max-w-md px-4 py-8 pt-24">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-center">Group Not Found</CardTitle>
+          <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm">
+            <CardHeader className="text-center pb-4">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+                <Gift className="w-8 h-8 text-red-600" />
+              </div>
+              <CardTitle className="text-xl font-semibold text-[#1b1b1b]">Group Not Found</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
-              <p className="text-muted-foreground mb-4">
+              <p className="text-slate-600 mb-6">
                 The group you're trying to join doesn't exist or is no longer available.
               </p>
-              <Button asChild>
+              <Button asChild className="w-full">
                 <Link href="/dashboard">Go to Dashboard</Link>
               </Button>
             </CardContent>
@@ -356,192 +346,221 @@ export default function JoinGroupPage({ params }: { params: Promise<{ id: string
   }
 
   return (
-    <div className="min-h-screen w-full bg-secondary">
-      
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 to-slate-100">
       <main className="container mx-auto max-w-md px-4 py-8 pt-24">
-        <LoadingOverlay isLoading={submitting} message="Processing...">
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="font-headline flex items-center gap-2">
-                <Gift className="w-6 h-6 text-accent" />
-                Join Gift Exchange
+        {/* Group Information Card */}
+        <Card className="mb-6 border-0 shadow-xl bg-gradient-to-br from-[#1b1b1b] to-slate-800 text-white">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-[#3ec7c2] flex items-center justify-center">
+                <Gift className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-semibold">{groupInfo.group_name}</CardTitle>
+                <CardDescription className="text-slate-300">
+                  Gift Exchange Invitation
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-3 text-sm">
+              <Users className="w-4 h-4 text-[#3ec7c2]" />
+              <span>Hosted by {groupInfo.moderator_name}</span>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <Calendar className="w-4 h-4 text-[#3ec7c2]" />
+              <span>Exchange: {new Date(groupInfo.gift_exchange_date).toLocaleDateString()}</span>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <span className="w-4 h-4 flex items-center justify-center text-[#3ec7c2] font-bold">₱</span>
+              <span>Budget: ₱{groupInfo.spending_minimum} minimum</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Welcome Step */}
+        {step === 'welcome' && (
+          <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm">
+            <CardHeader className="text-center pb-4">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#3ec7c2] to-teal-400 flex items-center justify-center">
+                <Users className="w-8 h-8 text-white" />
+              </div>
+              <CardTitle className="text-xl font-semibold text-[#1b1b1b]">Join the Fun!</CardTitle>
+              <CardDescription className="text-slate-600">
+                Sign in or create an account to join this gift exchange
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button 
+                onClick={() => setStep('auth')}
+                className="w-full h-12 bg-gradient-to-r from-[#1b1b1b] to-slate-700 hover:from-[#2a2a2a] hover:to-slate-600 text-white rounded-xl font-medium"
+              >
+                Get Started
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Authentication Step */}
+        {step === 'auth' && (
+          <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm">
+            <CardHeader className="text-center pb-4">
+              <CardTitle className="text-xl font-semibold text-[#1b1b1b]">
+                {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
               </CardTitle>
-              <CardDescription>
-                You've been invited to join "{groupInfo.group_name}"
+              <CardDescription className="text-slate-600">
+                {authMode === 'login' 
+                  ? 'Sign in to join the gift exchange' 
+                  : 'Create your account to get started'
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  <span>Hosted by {groupInfo.moderator_name}</span>
+              <form onSubmit={handleAuth} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-slate-700">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-11 rounded-xl border-slate-200 focus:border-[#3ec7c2] focus:ring-[#3ec7c2]"
+                    placeholder="Enter your email"
+                    required
+                  />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  <span>Exchange Date: {new Date(groupInfo.gift_exchange_date).toLocaleDateString()}</span>
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium text-slate-700">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-11 rounded-xl border-slate-200 focus:border-[#3ec7c2] focus:ring-[#3ec7c2]"
+                    placeholder="Enter your password"
+                    required
+                  />
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold">₱</span>
-                  <span>Minimum Spend: ₱{groupInfo.spending_minimum}</span>
+                
+                <LoadingButton 
+                  type="submit" 
+                  loading={submitting}
+                  className="w-full h-12 bg-gradient-to-r from-[#1b1b1b] to-slate-700 hover:from-[#2a2a2a] hover:to-slate-600 text-white rounded-xl font-medium"
+                >
+                  {authMode === 'login' ? 'Sign In' : 'Create Account'}
+                </LoadingButton>
+                
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-slate-200" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-3 text-slate-500">Or continue with</span>
+                  </div>
                 </div>
-              </div>
+                
+                <LoadingButton
+                  type="button"
+                  variant="outline"
+                  onClick={handleGoogleSignIn}
+                  loading={submitting}
+                  className="w-full h-12 rounded-xl border-slate-200 hover:bg-slate-50"
+                >
+                  <GoogleIcon />
+                  <span className="ml-2">Google</span>
+                </LoadingButton>
+                
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+                    className="text-sm text-[#3ec7c2] hover:underline"
+                  >
+                    {authMode === 'login' 
+                      ? "Don't have an account? Sign up" 
+                      : "Already have an account? Sign in"
+                    }
+                  </button>
+                </div>
+              </form>
             </CardContent>
           </Card>
+        )}
 
-          {currentUser ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Join as {currentUser.email}</CardTitle>
-                <CardDescription>
-                  You're already logged in. Click below to join this group as a member.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button onClick={handleJoinAsExistingUser} disabled={submitting} className="w-full">
-                  {submitting ? "Joining..." : "Join Group"}
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Create Account</TabsTrigger>
-              </TabsList>
+        {/* Screen Name Step */}
+        {step === 'screen-name' && (
+          <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm">
+            <CardHeader className="text-center pb-4">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#3ec7c2] to-teal-400 flex items-center justify-center">
+                <Users className="w-8 h-8 text-white" />
+              </div>
+              <CardTitle className="text-xl font-semibold text-[#1b1b1b]">Choose Your Screen Name</CardTitle>
+              <CardDescription className="text-slate-600">
+                How would you like other group members to see you?
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="screen-name" className="text-sm font-medium text-slate-700">Screen Name</Label>
+                <Input
+                  id="screen-name"
+                  type="text"
+                  value={screenName}
+                  onChange={(e) => setScreenName(e.target.value)}
+                  className="h-11 rounded-xl border-slate-200 focus:border-[#3ec7c2] focus:ring-[#3ec7c2]"
+                  placeholder="Enter your screen name"
+                  maxLength={50}
+                  required
+                />
+                <p className="text-xs text-slate-500">
+                  This is how you'll appear to other members in the group
+                </p>
+              </div>
               
-              <TabsContent value="login">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Login to Join</CardTitle>
-                    <CardDescription>
-                      Sign in with your existing account to join the group.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handleLogin} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="login-email">Email</Label>
-                        <Input
-                          id="login-email"
-                          type="email"
-                          value={loginEmail}
-                          onChange={(e) => setLoginEmail(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="login-password">Password</Label>
-                        <Input
-                          id="login-password"
-                          type="password"
-                          value={loginPassword}
-                          onChange={(e) => setLoginPassword(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <Button type="submit" disabled={submitting} className="w-full">
-                        {submitting ? "Logging in..." : "Login & Join Group"}
-                      </Button>
-                      
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-background px-2 text-muted-foreground">
-                            Or continue with
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleGoogleSignIn}
-                        disabled={submitting}
-                        className="w-full"
-                      >
-                        <GoogleIcon />
-                        Continue with Google
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+              <LoadingButton 
+                onClick={handleJoinGroup}
+                loading={submitting}
+                disabled={!screenName.trim()}
+                className="w-full h-12 bg-gradient-to-r from-[#3ec7c2] to-teal-400 hover:from-teal-500 hover:to-teal-500 text-white rounded-xl font-medium"
+              >
+                Join Gift Exchange
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </LoadingButton>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Success Step */}
+        {step === 'success' && (
+          <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm">
+            <CardHeader className="text-center pb-4">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-green-500 flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-white" />
+              </div>
+              <CardTitle className="text-xl font-semibold text-[#1b1b1b]">Welcome to the Group!</CardTitle>
+              <CardDescription className="text-slate-600">
+                You've successfully joined "{groupInfo.group_name}"
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-center space-y-2">
+                <p className="text-sm text-slate-600">
+                  You can now participate in the gift exchange and manage your wishlist.
+                </p>
+              </div>
               
-              <TabsContent value="register">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Create Account & Join</CardTitle>
-                    <CardDescription>
-                      Create a new account to join the gift exchange.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handleRegister} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="register-screen-name">Display Name</Label>
-                        <Input
-                          id="register-screen-name"
-                          type="text"
-                          value={registerScreenName}
-                          onChange={(e) => setRegisterScreenName(e.target.value)}
-                          placeholder="How others will see you"
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="register-email">Email</Label>
-                        <Input
-                          id="register-email"
-                          type="email"
-                          value={registerEmail}
-                          onChange={(e) => setRegisterEmail(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="register-password">Password</Label>
-                        <Input
-                          id="register-password"
-                          type="password"
-                          value={registerPassword}
-                          onChange={(e) => setRegisterPassword(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <Button type="submit" disabled={submitting} className="w-full">
-                        {submitting ? "Creating Account..." : "Create Account & Join"}
-                      </Button>
-                      
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-background px-2 text-muted-foreground">
-                            Or continue with
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleGoogleSignIn}
-                        disabled={submitting}
-                        className="w-full"
-                      >
-                        <GoogleIcon />
-                        Continue with Google
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          )}
-        </LoadingOverlay>
+              <Button 
+                onClick={() => router.push(`/dashboard`)}
+                className="w-full h-12 bg-gradient-to-r from-[#1b1b1b] to-slate-700 hover:from-[#2a2a2a] hover:to-slate-600 text-white rounded-xl font-medium"
+              >
+                Go to Dashboard
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );

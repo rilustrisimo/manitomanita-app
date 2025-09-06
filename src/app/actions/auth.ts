@@ -59,12 +59,10 @@ export async function signInWithEmail(formData: FormData) {
     return { error: error.message };
   }
 
-  // Set session cookie
-  if (data.session) {
-    await createSession(data.session.access_token);
-  }
-
-  redirect('/dashboard');
+  // Don't create server session here - let the client handle it naturally
+  // The middleware will create the server session when needed
+  
+  return { success: true, user: data.user, session: data.session };
 }
 
 export async function signInWithGoogle() {
@@ -130,14 +128,22 @@ export async function updatePassword(formData: FormData) {
 }
 
 // Session management functions
-export async function createSession(token: string) {
-  console.log('[createSession] Received token:', token?.substring(0, 20) + '...');
+export async function createSession(accessToken: string, refreshToken: string, expiresAt: number) {
+  console.log('[createSession] Creating session with refresh capability');
   
-  const expiresIn = 60 * 60 * 24 * 7; // 7 days in seconds (1 week)
+  // Store both access and refresh tokens with proper expiration
+  const sessionData = {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    expires_at: expiresAt
+  };
+  
+  // Set session cookie to expire when the refresh token expires (7 days by default in Supabase)
+  const refreshTokenExpiresIn = 60 * 60 * 24 * 7; // 7 days in seconds
   const options = {
     name: 'session',
-    value: token,
-    maxAge: expiresIn,
+    value: JSON.stringify(sessionData),
+    maxAge: refreshTokenExpiresIn,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax' as const,
@@ -146,7 +152,7 @@ export async function createSession(token: string) {
   
   try {
     (await cookies()).set(options as any);
-    console.log('[createSession] Session cookie set successfully');
+    console.log('[createSession] Session cookie set successfully with refresh token');
     return { success: true };
   } catch (error) {
     console.error('[createSession] Failed to set session cookie:', error);
@@ -165,9 +171,9 @@ export async function getCurrentUser() {
 
     // Get the user profile
     const { data: profile } = await supabase
-      .from('user_profiles')
+      .from('account_profiles')
       .select('*')
-      .eq('main_user_id', user.id)
+      .eq('user_id', user.id)
       .single();
 
     return { 
@@ -188,10 +194,62 @@ export async function getSessionToken() {
   try {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('session');
-    return sessionCookie?.value || null;
+    
+    if (!sessionCookie?.value) {
+      return null;
+    }
+    
+    try {
+      const sessionData = JSON.parse(sessionCookie.value);
+      return sessionData.access_token || null;
+    } catch (parseError) {
+      console.error('[getSessionToken] Failed to parse session cookie:', parseError);
+      return null;
+    }
   } catch (error) {
     console.error('[getSessionToken] Error:', error);
     return null;
+  }
+}
+
+export async function validateServerSession() {
+  try {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session');
+    
+    if (!sessionCookie?.value) {
+      return { isValid: false, user: null, error: 'No session cookie' };
+    }
+    
+    let sessionData;
+    try {
+      sessionData = JSON.parse(sessionCookie.value);
+    } catch (parseError) {
+      console.error('[validateServerSession] Failed to parse session cookie:', parseError);
+      return { isValid: false, user: null, error: 'Invalid session format' };
+    }
+    
+    if (!sessionData.access_token) {
+      return { isValid: false, user: null, error: 'No access token' };
+    }
+    
+    // Create Supabase client and set the session
+    const supabase = await createSupabaseServerClient();
+    
+    // Set the session on the Supabase client
+    const { data: { user }, error } = await supabase.auth.setSession({
+      access_token: sessionData.access_token,
+      refresh_token: sessionData.refresh_token
+    });
+    
+    if (error || !user) {
+      return { isValid: false, user: null, error: error?.message || 'Invalid session' };
+    }
+    
+    return { isValid: true, user, error: null };
+  } catch (error) {
+    console.error('[validateServerSession] Error:', error);
+    return { isValid: false, user: null, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 

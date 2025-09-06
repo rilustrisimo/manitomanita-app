@@ -41,15 +41,16 @@ export const createSupabaseBrowserClient = () => {
  */
 export const clearSupabaseClient = () => {
   if (typeof window !== 'undefined') {
-    // Clear all auth-related items from localStorage
+    // Clear basic auth tokens
     localStorage.removeItem('manitomanita.auth.token');
-    localStorage.removeItem('sb-' + process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0] + '-auth-token');
-    // Clear any other potential Supabase storage keys
-    Object.keys(localStorage).forEach(key => {
-      if (key.includes('supabase') || key.includes('auth')) {
-        localStorage.removeItem(key);
+    
+    // Clear Supabase default storage
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      const supabaseProject = process.env.NEXT_PUBLIC_SUPABASE_URL.split('//')[1]?.split('.')[0];
+      if (supabaseProject) {
+        localStorage.removeItem(`sb-${supabaseProject}-auth-token`);
       }
-    });
+    }
   }
   supabaseClient = null;
 };

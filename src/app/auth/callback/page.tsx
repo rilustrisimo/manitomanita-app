@@ -13,17 +13,22 @@ export default function AuthCallback() {
       const supabase = createSupabaseBrowserClient();
       
       try {
-        const { data, error } = await supabase.auth.getSession();
+        // Get the session from Supabase
+        const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Auth callback error:', error);
-          router.push('/login?error=auth_callback_failed');
+          router.push('/login?error=callback_failed');
           return;
         }
 
-        if (data.session) {
-          // Create server session
-          await createSession(data.session.access_token);
+        if (session?.user) {
+          // Create server session with the tokens
+          await createSession(
+            session.access_token,
+            session.refresh_token,
+            session.expires_at || Math.floor(Date.now() / 1000) + (60 * 60) // 1 hour fallback
+          );
           
           // Redirect to dashboard
           router.push('/dashboard');
@@ -33,7 +38,7 @@ export default function AuthCallback() {
         }
       } catch (err) {
         console.error('Callback processing error:', err);
-        router.push('/login?error=callback_processing_failed');
+        router.push('/login');
       }
     };
 
@@ -41,10 +46,13 @@ export default function AuthCallback() {
   }, [router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Completing sign in...</p>
+    <div className="min-h-screen w-full bg-gradient-to-br from-gray-50 via-white to-gray-50/50 flex items-center justify-center">
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border-0 p-12 shadow-2xl shadow-gray-200/50 text-center max-w-md mx-auto">
+        <div className="w-16 h-16 bg-gradient-to-r from-[#3ec7c2]/10 to-[#3ec7c2]/20 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#3ec7c2]/30 border-t-[#3ec7c2]"></div>
+        </div>
+        <h2 className="text-2xl font-bold text-[#1b1b1b] mb-3">Completing sign in...</h2>
+        <p className="text-gray-600 leading-relaxed">Please wait while we sign you in.</p>
       </div>
     </div>
   );

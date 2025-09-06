@@ -14,11 +14,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { LogOut, User, Settings, Menu } from 'lucide-react';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 export function Header() {
   const { user, loading, signOut } = useAuth();
   const { profile, loading: profileLoading } = useAccountProfile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Force not logged in state on login/register pages
+  const isAuthPage = pathname === '/login' || pathname === '/register';
+  const showAsLoggedOut = isAuthPage;
 
   const handleSignOut = async () => {
     await signOut();
@@ -53,7 +59,7 @@ export function Header() {
 
           {/* Desktop User menu or auth buttons - moved to right */}
           <div className="hidden md:flex items-center space-x-3">
-            {user && (
+            {user && !showAsLoggedOut && (
               <Link 
                 href="/dashboard" 
                 className="text-gray-600 hover:text-gray-900 hover:bg-gray-100/50 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200"
@@ -61,9 +67,9 @@ export function Header() {
                 Dashboard
               </Link>
             )}
-            {loading || profileLoading ? (
+            {(loading || profileLoading) && !showAsLoggedOut ? (
               <div className="animate-pulse bg-gray-200 rounded-full h-9 w-9"></div>
-            ) : user ? (
+            ) : (user && !showAsLoggedOut) ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-9 w-9 rounded-full hover:bg-gray-100/50 transition-colors duration-200 p-0">
@@ -140,7 +146,7 @@ export function Header() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200/50 bg-white/95 backdrop-blur-xl">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {user ? (
+              {(user && !showAsLoggedOut) ? (
                 <>
                   {/* User info */}
                   <div className="flex items-center gap-3 p-3 bg-gray-50/50 rounded-xl mb-3">

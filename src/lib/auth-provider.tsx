@@ -17,18 +17,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const supabase = createSupabaseBrowserClient();
 
   useEffect(() => {
-    // Get initial session
+    // Get initial session - keep it simple
     const getInitialSession = async () => {
       try {
+        console.log('[AuthProvider] Getting initial session...');
+        
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
-          console.error('Error getting session:', error);
+          console.error('[AuthProvider] Error getting session:', error);
         } else {
+          console.log('[AuthProvider] Initial session:', session?.user?.email || 'No session');
           setSession(session);
           setUser(session?.user ?? null);
         }
       } catch (error) {
-        console.error('Error in getInitialSession:', error);
+        console.error('[AuthProvider] Error in getInitialSession:', error);
       } finally {
         setLoading(false);
       }
@@ -39,18 +42,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log('[AuthProvider] Auth state changed:', event, session?.user?.email || 'No session');
         
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
 
-        // Handle session expiry and cleanup
-        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-          if (!session) {
-            // Clear any remaining tokens on sign out
-            await signOutUser();
-          }
+        // Handle sign out cleanup
+        if (event === 'SIGNED_OUT') {
+          await signOutUser();
         }
       }
     );
@@ -63,11 +63,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = async () => {
     try {
       setLoading(true);
+      
+      // Sign out from Supabase client
+      await supabase.auth.signOut();
+      
+      // Clear client storage
       await signOutUser();
+      
+      // Clear server session
+      const { signOut: serverSignOut } = await import('@/app/actions/auth');
+      await serverSignOut();
+      
+      // Clear local state
       setUser(null);
       setSession(null);
+      
+      // Redirect to login page
+      window.location.href = '/login';
     } catch (error) {
       console.error('Error signing out:', error);
+      // Even if there's an error, redirect to login
+      window.location.href = '/login';
     } finally {
       setLoading(false);
     }
@@ -80,7 +96,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.error('Error refreshing session:', error);
         // If refresh fails, sign out
         await signOut();
-      } else {
+      } else if (session) {
+        // Update server session with new tokens
+        const { createSession } = await import('@/app/actions/auth');
+        await createSession(
+          session.access_token,
+          session.refresh_token,
+          session.expires_at || Date.now() + (60 * 60 * 1000)
+        );
         setSession(session);
         setUser(session?.user ?? null);
       }

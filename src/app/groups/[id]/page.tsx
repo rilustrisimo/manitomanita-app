@@ -54,6 +54,18 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
   const { data: userRes } = await supabase.auth.getUser();
   const currentUser = { id: userRes.user?.id ?? '', name: userRes.user?.user_metadata?.full_name ?? 'Friend' } as any;
 
+  // Get the current user's user_profiles ID for membership comparison
+  let currentUserProfileId: string | null = null;
+  if (currentUser.id) {
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('main_user_id', currentUser.id)
+      .maybeSingle();
+    
+    currentUserProfileId = userProfile?.id || null;
+  }
+
   // Try to fetch the group row; allow a brief retry in case we're landing here immediately after creation
   let { data: groupRow, error: groupErr } = await supabase
     .from('groups')
@@ -119,9 +131,9 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
   } as any;
 
   const moderator = group.members.find((m: any) => m.isModerator);
-  const currentUserIsMember = group.members.some((m: any) => m.id === currentUser.id);
-  const currentUserIsModerator = group.members.find((m: any) => m.id === currentUser.id)?.isModerator ?? false;
-  const recipientId = group.matches?.[currentUser.id];
+  const currentUserIsMember = currentUserProfileId ? group.members.some((m: any) => m.id === currentUserProfileId) : false;
+  const currentUserIsModerator = currentUserProfileId ? (group.members.find((m: any) => m.id === currentUserProfileId)?.isModerator ?? false) : false;
+  const recipientId = currentUserProfileId ? group.matches?.[currentUserProfileId] : null;
   const recipient = group.members.find((m: any) => m.id === recipientId);
   const currentUserWishlist: any[] = [];
 
