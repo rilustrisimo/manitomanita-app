@@ -2,15 +2,27 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-// Header removed - using global header from layout
 import Footer from '@/components/footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { AuthGuard } from '@/components/auth-guard';
 
 export default function SettingsPage() {
+  return (
+    <AuthGuard 
+      loadingMessage="Loading settings..."
+      loginMessage="Please log in"
+      loginDescription="Sign in to access your account settings and preferences."
+    >
+      <SettingsPageContent />
+    </AuthGuard>
+  );
+}
+
+function SettingsPageContent() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <main className="flex-1 pt-24">

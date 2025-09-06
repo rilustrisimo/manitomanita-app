@@ -14,8 +14,21 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingOverlay, LoadingButton } from '@/components/ui/loading';
 import { createGroup } from '@/app/actions/create-group';
+import { AuthGuard } from '@/components/auth-guard';
 
 export default function NewGroupPage() {
+  return (
+    <AuthGuard 
+      loadingMessage="Loading group creation..."
+      loginMessage="Please log in"
+      loginDescription="Sign in to create and manage gift exchange groups."
+    >
+      <NewGroupPageContent />
+    </AuthGuard>
+  );
+}
+
+function NewGroupPageContent() {
   const router = useRouter();
   const { toast } = useToast();
   const [groupName, setGroupName] = useState('');

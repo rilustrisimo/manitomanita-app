@@ -1,10 +1,13 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { createClient } from '@supabase/supabase-js';
-// Header removed - using global header from layout
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import ProfileAvatar from '@/components/profile-avatar';
 import type { Member } from '@/lib/types';
+import { AuthGuard } from '@/components/auth-guard';
+import { useAuth } from '@/lib/auth-context';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { Calendar, Users, Gift, ChevronLeft, Copy, Bot, LogIn } from 'lucide-react';
 import WishlistEditor from '@/components/wishlist-editor';
 import ShuffleButton from '../../../components/ShuffleButton';
+import { LoadingSpinner } from '@/components/ui/loading';
 
 function RecipientCard({ recipient }: { recipient: Member }) {
   return (
@@ -45,95 +49,164 @@ function RecipientCard({ recipient }: { recipient: Member }) {
   );
 }
 
-export const dynamic = 'force-dynamic';
+export default function GroupPage({ params }: { params: { id: string } }) {
+  return (
+    <AuthGuard 
+      loadingMessage="Loading group details..."
+      loginMessage="Please log in"
+      loginDescription="Sign in to view group details and participate in the gift exchange."
+    >
+      <GroupPageContent params={params} />
+    </AuthGuard>
+  );
+}
 
-export default async function GroupPage({ params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createSupabaseServerClient();
-  const { id: gid } = await params;
+function GroupPageContent({ params }: { params: { id: string } }) {
+  const { user } = useAuth();
+  const [group, setGroup] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // At this point, user is guaranteed to exist because of AuthGuard
+  if (!user) return null;
 
-  const { data: userRes } = await supabase.auth.getUser();
-  const currentUser = { id: userRes.user?.id ?? '', name: userRes.user?.user_metadata?.full_name ?? 'Friend' } as any;
+  const supabase = createSupabaseBrowserClient();
 
-  // Get the current user's user_profiles ID for membership comparison
-  let currentUserProfileId: string | null = null;
-  if (currentUser.id) {
-    const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('id')
-      .eq('main_user_id', currentUser.id)
-      .maybeSingle();
-    
-    currentUserProfileId = userProfile?.id || null;
+  useEffect(() => {
+    async function loadGroupData() {
+      try {
+        const gid = params.id;
+        const currentUser = { id: user!.id, name: user!.user_metadata?.full_name ?? 'Friend' };
+
+        // Get the current user's user_profiles ID for membership comparison
+        let currentUserProfileId: string | null = null;
+        if (currentUser.id) {
+          const { data: userProfile } = await supabase
+            .from('user_profiles')
+            .select('id')
+            .eq('main_user_id', currentUser.id)
+            .maybeSingle();
+          
+          currentUserProfileId = (userProfile as any)?.id || null;
+        }
+
+        // Try to fetch the group row
+        let { data: groupRow, error: groupErr } = await supabase
+          .from('groups')
+          .select('*')
+          .eq('id', gid)
+          .maybeSingle();
+
+        if (!groupRow) {
+          // Brief retry to account for any transient read lag or policy propagation
+          await new Promise((r) => setTimeout(r, 350));
+          const retry = await supabase.from('groups').select('*').eq('id', gid).maybeSingle();
+          groupRow = retry.data ?? null;
+          groupErr = retry.error ?? groupErr;
+        }
+
+        if (!groupRow) {
+          console.error('[GroupPage] Group not found or not accessible', { gid, error: groupErr });
+          setError('Group not found');
+          setLoading(false);
+          return;
+        }
+
+        const { data: ms, error: msErr } = await supabase
+          .from('memberships')
+          .select('user_id, role, assigned_pair_user_id')
+          .eq('group_id', gid);
+        
+        if (msErr) {
+          console.error('[GroupPage] memberships read error (continuing with minimal data)', msErr);
+        }
+
+        const memberIds = (ms ?? []).map((m: any) => m.user_id).filter(Boolean);
+        let profs: any[] = [];
+        if (memberIds.length > 0) {
+          const { data } = await supabase
+            .from('user_profiles')
+            .select('id, email, screen_name, profile_image_url')
+            .in('id', memberIds);
+          profs = data ?? [];
+        }
+
+        const members: Member[] = profs.map((p: any) => ({
+          id: p.id,
+          name: p.screen_name,
+          screenName: p.screen_name,
+          avatarUrl: '', // Deprecated field, now using profileImagePath
+          profileImagePath: p.profile_image_url,
+          isModerator: ((ms as any) ?? []).find((x: any) => x.user_id === p.id)?.role === 'moderator',
+          wishlist: [],
+          comments: [],
+        }));
+
+        const groupData = {
+          id: (groupRow as any).id,
+          name: (groupRow as any).group_name,
+          exchangeDate: (groupRow as any).gift_exchange_date,
+          spendingMinimum: Number((groupRow as any).spending_minimum),
+          isPro: false,
+          matchingCompleted: (groupRow as any).is_matched,
+          members,
+          matches: Object.fromEntries(
+            ((ms as any) ?? [])
+              .map((x: any) => [x.user_id, x.assigned_pair_user_id] as const)
+              .filter((item: readonly [any, any]) => !!item[1])
+          ),
+          currentUserProfileId,
+          currentUser,
+        };
+
+        setGroup(groupData);
+      } catch (error) {
+        console.error('Error loading group:', error);
+        setError('Failed to load group');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadGroupData();
+  }, [params.id, user, supabase]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-secondary">
+        <main className="container mx-auto px-4 py-8 pt-24">
+          <div className="flex justify-center items-center py-24">
+            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border-0 p-12 shadow-lg shadow-gray-200/50">
+              <LoadingSpinner size="lg" />
+            </div>
+          </div>
+        </main>
+      </div>
+    );
   }
 
-  // Try to fetch the group row; allow a brief retry in case we're landing here immediately after creation
-  let { data: groupRow, error: groupErr } = await supabase
-    .from('groups')
-    .select('*')
-    .eq('id', gid)
-    .maybeSingle();
-
-  if (!groupRow) {
-    // Brief retry to account for any transient read lag or policy propagation
-    await new Promise((r) => setTimeout(r, 350));
-    const retry = await supabase.from('groups').select('*').eq('id', gid).maybeSingle();
-    groupRow = retry.data ?? null as any;
-    groupErr = retry.error ?? groupErr;
+  if (error || !group) {
+    return (
+      <div className="min-h-screen bg-secondary">
+        <main className="container mx-auto px-4 py-8 pt-24">
+          <div className="flex justify-center items-center py-24">
+            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border-0 p-12 shadow-lg shadow-gray-200/50 text-center">
+              <h2 className="text-2xl font-bold text-red-600 mb-4">Group Not Found</h2>
+              <p className="text-gray-600 mb-6">{error || 'The group you are looking for does not exist or you do not have access to it.'}</p>
+              <Button asChild>
+                <Link href="/dashboard">Back to Dashboard</Link>
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
   }
-
-  if (!groupRow) {
-    console.error('[GroupPage] Group not found or not accessible', { gid, error: groupErr });
-    notFound();
-  }
-
-  const { data: ms, error: msErr } = await supabase
-    .from('memberships')
-    .select('user_id, role, assigned_pair_user_id')
-    .eq('group_id', gid);
-  if (msErr) {
-    console.error('[GroupPage] memberships read error (continuing with minimal data)', msErr);
-  }
-
-  const memberIds = (ms ?? []).map((m) => m.user_id).filter(Boolean);
-  let profs: any[] | null = [];
-  if (memberIds.length > 0) {
-    const { data } = await supabase
-      .from('user_profiles')
-      .select('id, email, screen_name, profile_image_url')
-      .in('id', memberIds);
-    profs = data ?? [];
-  }
-
-  const members: Member[] = (profs ?? []).map((p) => ({
-    id: p.id,
-    name: p.screen_name,
-    screenName: p.screen_name,
-    avatarUrl: '', // Deprecated field, now using profileImagePath
-    profileImagePath: p.profile_image_url,
-    isModerator: (ms ?? []).find((x) => x.user_id === p.id)?.role === 'moderator',
-    wishlist: [],
-    comments: [],
-  }));
-
-  const group = {
-    id: groupRow.id,
-    name: groupRow.group_name,
-    exchangeDate: groupRow.gift_exchange_date,
-    spendingMinimum: Number(groupRow.spending_minimum),
-    isPro: false,
-    matchingCompleted: groupRow.is_matched,
-    members,
-    matches: Object.fromEntries(
-      (ms ?? [])
-        .map((x) => [x.user_id, x.assigned_pair_user_id] as const)
-        .filter(([, v]) => !!v)
-    ),
-  } as any;
 
   const moderator = group.members.find((m: any) => m.isModerator);
-  const currentUserIsMember = currentUserProfileId ? group.members.some((m: any) => m.id === currentUserProfileId) : false;
-  const currentUserIsModerator = currentUserProfileId ? (group.members.find((m: any) => m.id === currentUserProfileId)?.isModerator ?? false) : false;
-  const recipientId = currentUserProfileId ? group.matches?.[currentUserProfileId] : null;
+  const currentUserIsMember = group.currentUserProfileId ? group.members.some((m: any) => m.id === group.currentUserProfileId) : false;
+  const currentUserIsModerator = group.currentUserProfileId ? (group.members.find((m: any) => m.id === group.currentUserProfileId)?.isModerator ?? false) : false;
+  const recipientId = group.currentUserProfileId ? group.matches?.[group.currentUserProfileId] : null;
   const recipient = group.members.find((m: any) => m.id === recipientId);
   const currentUserWishlist: any[] = [];
 

@@ -14,9 +14,10 @@ import { uploadProfileImage, deleteProfileImage, updateUserProfileImage, cleanup
 import { resizeAndCompressImage, isValidImageFile, formatFileSize } from "@/lib/image-processing";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Trash2 } from "lucide-react";
+import { Upload, Trash2, LogIn } from "lucide-react";
 import { LoadingOverlay, LoadingSpinner } from "@/components/ui/loading";
 import { useAuth } from "@/lib/auth-context";
+import { AuthGuard } from "@/components/auth-guard";
 import { getCurrentUser, getSessionToken } from "@/app/actions/auth";
 
 interface UserProfile {
@@ -30,6 +31,18 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
+  return (
+    <AuthGuard 
+      loadingMessage="Loading your profile..."
+      loginMessage="Please log in"
+      loginDescription="Sign in to access your profile and manage your account settings."
+    >
+      <ProfilePageContent />
+    </AuthGuard>
+  );
+}
+
+function ProfilePageContent() {
   const { user: authUser } = useAuth();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,6 +53,10 @@ export default function ProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
